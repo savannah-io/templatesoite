@@ -5,18 +5,15 @@ import { motion } from 'framer-motion'
 import { 
   WrenchScrewdriverIcon, 
   SparklesIcon, 
-  PaintBrushIcon, 
-  CogIcon,
+  PaintBrushIcon,
   WrenchIcon,
   BeakerIcon,
-  ShieldCheckIcon,
-  ExclamationTriangleIcon,
+  CogIcon,
   TruckIcon,
-  WrenchScrewdriverIcon as WrenchScrewdriverOutlineIcon,
-  CogIcon as CogOutlineIcon,
+  ShieldCheckIcon,
+  DocumentCheckIcon,
   SwatchIcon,
   ScaleIcon,
-  DocumentCheckIcon,
   ClipboardDocumentCheckIcon
 } from '@heroicons/react/24/outline'
 

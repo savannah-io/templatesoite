@@ -167,7 +167,7 @@ export default function Home() {
               transition={{ delay: 0.2 }}
               className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto"
             >
-              Book your appointment with our expert technicians. We'll get your vehicle back to its best condition.
+              Book your appointment with our expert technicians. We&apos;ll get your vehicle back to its best condition.
             </motion.p>
           </div>
 

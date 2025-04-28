@@ -13,6 +13,23 @@ import {
   BellAlertIcon
 } from '@heroicons/react/24/outline'
 
+interface TawkMessengerProps {
+  propertyId: string;
+  widgetId: string;
+}
+
+declare global {
+  interface Window {
+    Tawk_API?: {
+      onLoad?: () => void;
+      minimize?: () => void;
+    };
+    TawkMessenger?: {
+      onLoad?: () => void;
+    };
+  }
+}
+
 const Section = ({ icon: Icon, title, children }: { icon: any, title: string, children: React.ReactNode }) => (
   <div className="relative">
     <div className="flex items-start gap-4 group">

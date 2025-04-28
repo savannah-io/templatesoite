@@ -1,7 +1,9 @@
 import './main.css'
 import type { Metadata } from 'next'
 import { Space_Grotesk, Montserrat } from 'next/font/google'
-import ChatWidget from '@/components/ChatWidget'
+import { Inter } from 'next/font/google'
+import { Outfit } from 'next/font/google'
+import './globals.css'
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -12,6 +14,18 @@ const spaceGrotesk = Space_Grotesk({
 const montserrat = Montserrat({
   subsets: ['latin'],
   variable: '--font-montserrat',
+  display: 'swap'
+})
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap'
+})
+
+const outfit = Outfit({
+  subsets: ['latin'],
+  variable: '--font-outfit',
   display: 'swap'
 })
 
@@ -35,10 +49,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${montserrat.variable}`}>
+    <html lang="en" className={`${spaceGrotesk.variable} ${montserrat.variable} ${inter.variable} ${outfit.variable} scroll-smooth`}>
       <body className="antialiased bg-white font-sans" suppressHydrationWarning>
         {children}
-        <ChatWidget />
       </body>
     </html>
   )

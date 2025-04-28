@@ -120,6 +120,12 @@ async function getBookedSlots(date: string) {
   }
 }
 
+interface ErrorWithResponse extends Error {
+  response?: {
+    data?: unknown;
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -171,13 +177,13 @@ export async function GET(request: Request) {
     console.log('Generated time slots:', timeSlots);
 
     return NextResponse.json({ timeSlots });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Calendar API error:', error);
     const errorDetails = error instanceof Error ? {
       message: error.message,
       stack: error.stack,
       name: error.name,
-      response: error instanceof Error && 'response' in error ? (error as { response?: { data?: unknown } }).response?.data : undefined
+      response: (error as ErrorWithResponse).response?.data
     } : 'Unknown error';
     
     if (error instanceof Error && error.message === 'invalid_grant') {
