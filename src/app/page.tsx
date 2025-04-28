@@ -2,30 +2,14 @@
 
 import Header from '../components/Header'
 import Footer from '../components/Footer'
-import { StarIcon, WrenchIcon, ClockIcon, UserGroupIcon, ArrowRightIcon, ShieldCheckIcon, SparklesIcon, CheckIcon } from '@heroicons/react/24/solid'
+import { StarIcon, ClockIcon, ArrowRightIcon, ShieldCheckIcon, SparklesIcon } from '@heroicons/react/24/solid'
 import { motion } from 'framer-motion'
-import Link from 'next/link'
 import ServiceReel from '../components/ServiceReel'
 import Image from 'next/image'
 import MouseFollowGradient from '../components/MouseFollowGradient'
 import BookingForm from '../components/BookingForm'
 
 export default function Home() {
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2
-      }
-    }
-  }
-
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  }
-
   return (
     <main className="min-h-screen">
       <Header />
@@ -293,7 +277,7 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
             >
-              We're grateful to have helped so many wonderful customers get back on the road safely.
+              We&apos;re committed to excellence
             </motion.p>
           </div>
 
@@ -328,7 +312,7 @@ export default function Home() {
                     <StarIcon key={i} className="h-5 w-5" />
                   ))}
                 </div>
-                <p className="text-white/90 mb-6 leading-relaxed">"{review.text}"</p>
+                <p className="text-white/90 mb-6 leading-relaxed">&quot;{review.text}&quot;</p>
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-500 flex items-center justify-center text-white font-medium">
                     {review.author[0]}

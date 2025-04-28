@@ -15,6 +15,17 @@ interface FormData {
   carModel: string;
 }
 
+interface TimeSlot {
+  time: string;
+  available: boolean;
+  startTime: string;
+  endTime: string;
+}
+
+interface CalendarResponse {
+  timeSlots: TimeSlot[];
+}
+
 interface SlotData {
   available: boolean;
   time: string;
@@ -192,17 +203,54 @@ export default function BookingForm() {
       try {
         const slots = await Promise.all(
           days.map(async (date) => {
-            const dateStr = date.toISOString().split('T')[0];
-            const res = await fetch(`${process.env.NEXT_PUBLIC_WEBSITE_URL}/api/calendar?date=${dateStr}`);
-            if (res.ok) {
+            try {
+              const dateStr = date.toISOString().split('T')[0];
+              const res = await fetch(`/api/calendar?date=${dateStr}`);
+              
+              // Add detailed error logging
+              if (!res.ok) {
+                const errorData = await res.json();
+                console.error(`Failed to fetch slots for ${dateStr}:`, {
+                  status: res.status,
+                  statusText: res.statusText,
+                  error: errorData
+                });
+                return { 
+                  date: dateStr, 
+                  slots: [] 
+                };
+              }
+
               const data = await res.json();
-              return { date: dateStr, slots: data.availableSlots };
+              console.log(`Slots for ${dateStr}:`, data); // Debug log
+              
+              if (!data.timeSlots || !Array.isArray(data.timeSlots)) {
+                console.error(`Invalid slots data for ${dateStr}:`, data);
+                return {
+                  date: dateStr,
+                  slots: []
+                };
+              }
+
+              return { 
+                date: dateStr, 
+                slots: data.timeSlots.map((slot: TimeSlot) => ({
+                  ...slot,
+                  available: !!slot.available
+                }))
+              };
+            } catch (error) {
+              console.error(`Error fetching slots for date ${date}:`, error);
+              return { 
+                date: date.toISOString().split('T')[0], 
+                slots: [] 
+              };
             }
-            return { date: dateStr, slots: [] };
           })
         );
 
-        setAvailableSlots(slots);
+        console.log('All fetched slots:', slots); // Debug log
+        setAvailableSlots(slots.filter(slot => slot !== null));
       } catch (error) {
         console.error('Error fetching slots:', error);
         setAvailableSlots([]);
@@ -210,6 +258,7 @@ export default function BookingForm() {
         setDatesLoading(false);
       }
     };
+
     const days: Date[] = [];
     const today = new Date();
     for (let i = 0; i < 14; i++) {
@@ -222,9 +271,11 @@ export default function BookingForm() {
 
   // Helper to check if a date has any available slots
   const isDateAvailable = (date: Date): boolean => {
+    if (!date) return false;
     const dateStr = date.toISOString().split('T')[0];
     const dateSlots = availableSlots.find(slot => slot.date === dateStr);
-    return dateSlots?.slots.some(slot => slot.available) ?? false;
+    if (!dateSlots || !dateSlots.slots) return false;
+    return dateSlots.slots.some(slot => slot && slot.available);
   };
 
   return (

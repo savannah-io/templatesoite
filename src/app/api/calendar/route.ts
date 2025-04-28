@@ -1,6 +1,5 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
-import { sendEmailConfirmation, sendSMSConfirmation } from '@/utils/notifications';
 
 // Initialize OAuth2 client
 const oauth2Client = new google.auth.OAuth2(
@@ -234,7 +233,6 @@ export async function POST(request: Request) {
         dateTime: endTime,
         timeZone: 'America/New_York',
       },
-      // Only use default Google Calendar notifications
       reminders: {
         useDefault: true
       }
@@ -292,40 +290,9 @@ export async function POST(request: Request) {
       }),
     });
 
-    const supabaseResponseBody = await supabaseResponse.text();
-    console.log('Supabase response:', supabaseResponse.status, supabaseResponseBody);
-
     if (!supabaseResponse.ok) {
-      throw new Error('Failed to store appointment in database: ' + supabaseResponseBody);
+      throw new Error('Failed to store appointment in database: ' + await supabaseResponse.text());
     }
-
-    // Temporarily commenting out notifications until Twilio verification is complete
-    /* 
-    try {
-      await Promise.all([
-        sendEmailConfirmation({
-          customerName,
-          customerEmail,
-          customerPhone: formattedPhone,
-          startTime,
-          carMake,
-          carModel,
-          serviceType
-        }),
-        sendSMSConfirmation({
-          customerName,
-          customerEmail,
-          customerPhone: formattedPhone,
-          startTime,
-          carMake,
-          carModel,
-          serviceType
-        })
-      ]);
-    } catch (error) {
-      console.error('Error sending notifications:', error);
-    }
-    */
 
     return NextResponse.json({ 
       success: true, 
@@ -350,7 +317,6 @@ export async function POST(request: Request) {
         console.error('Google/Supabase API error response:', (error as any).response.data);
       }
     }
-    // More detailed error response
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const errorDetails = error instanceof Error && (error as any).response?.data 
       ? (error as any).response.data 
@@ -361,8 +327,38 @@ export async function POST(request: Request) {
       details: errorMessage,
       stack: error instanceof Error ? error.stack : undefined,
       googleError: errorDetails,
-      // Add request body for debugging
       requestBody: body
     }, { status: 500 });
   }
+}
+
+type CalendarEvent = {
+  summary: string;
+  description: string;
+  start: { dateTime: string };
+  end: { dateTime: string };
+};
+
+type AppointmentData = {
+  date: string;
+  time: string;
+  service: string;
+  name: string;
+  email: string;
+  phone: string;
+};
+
+async function createCalendarEvent(data: AppointmentData): Promise<CalendarEvent> {
+  const event: CalendarEvent = {
+    summary: `Vehicle Service - ${data.name}`,
+    description: `Service: ${data.service}\nCustomer: ${data.name}\nPhone: ${data.phone}\nEmail: ${data.email}`,
+    start: { dateTime: new Date(data.date + ' ' + data.time).toISOString() },
+    end: { dateTime: new Date(new Date(data.date + ' ' + data.time).getTime() + 3600000).toISOString() }
+  };
+  return event;
+}
+
+interface GoogleCalendarResponse {
+  items: CalendarEvent[];
+  // Add other fields as needed
 } 
