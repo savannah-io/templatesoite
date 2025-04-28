@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { UserIcon, PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 
@@ -20,10 +20,6 @@ interface TimeSlot {
   available: boolean;
   startTime: string;
   endTime: string;
-}
-
-interface CalendarResponse {
-  timeSlots: TimeSlot[];
 }
 
 interface SlotData {
@@ -137,7 +133,7 @@ export default function BookingForm() {
         return;
       }
 
-      const responseData = await apiResponse.json();
+      await apiResponse.json();
       setSuccess(true);
       resetForm();
     } catch (error) {
@@ -207,7 +203,6 @@ export default function BookingForm() {
               const dateStr = date.toISOString().split('T')[0];
               const res = await fetch(`/api/calendar?date=${dateStr}`);
               
-              // Add detailed error logging
               if (!res.ok) {
                 const errorData = await res.json();
                 console.error(`Failed to fetch slots for ${dateStr}:`, {
@@ -222,7 +217,6 @@ export default function BookingForm() {
               }
 
               const data = await res.json();
-              console.log(`Slots for ${dateStr}:`, data); // Debug log
               
               if (!data.timeSlots || !Array.isArray(data.timeSlots)) {
                 console.error(`Invalid slots data for ${dateStr}:`, data);
@@ -248,34 +242,22 @@ export default function BookingForm() {
             }
           })
         );
-
-        console.log('All fetched slots:', slots); // Debug log
-        setAvailableSlots(slots.filter(slot => slot !== null));
+        setAvailableSlots(slots);
       } catch (error) {
         console.error('Error fetching slots:', error);
-        setAvailableSlots([]);
       } finally {
         setDatesLoading(false);
       }
     };
 
-    const days: Date[] = [];
-    const today = new Date();
-    for (let i = 0; i < 14; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      days.push(date);
-    }
+    const days = generateCalendarWeeks().flat().filter((date): date is Date => date !== null);
     fetchSlots(days);
   }, []);
 
-  // Helper to check if a date has any available slots
   const isDateAvailable = (date: Date): boolean => {
-    if (!date) return false;
     const dateStr = date.toISOString().split('T')[0];
-    const dateSlots = availableSlots.find(slot => slot.date === dateStr);
-    if (!dateSlots || !dateSlots.slots) return false;
-    return dateSlots.slots.some(slot => slot && slot.available);
+    const slotsForDate = availableSlots.find(slot => slot.date === dateStr);
+    return slotsForDate?.slots.some(slot => slot.available) ?? false;
   };
 
   return (

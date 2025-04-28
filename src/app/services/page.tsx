@@ -92,7 +92,7 @@ function ServicesContent() {
       id: "cosmetic",
       title: "Cosmetic Services",
       icon: <SparklesOutlineIcon className="w-full h-full" />,
-      description: "Premium cosmetic services to enhance and protect your vehicle's appearance",
+      description: "Premium cosmetic services to enhance and protect your vehicle&apos;s appearance",
       bgImage: "/images/back5.png",
       color: "from-primary-500 to-primary-600",
       services: [

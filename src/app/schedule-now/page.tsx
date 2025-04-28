@@ -201,10 +201,8 @@ export default function ScheduleNow() {
                       >
                         {stepIcons[stepNumber - 1]}
                       </motion.div>
-                      <span className={`mt-2 text-sm font-medium ${
-                        step >= stepNumber ? 'text-blue-500' : 'text-gray-500'
-                      }`}>
-                        {stepNumber === 1 ? 'Service' : stepNumber === 2 ? 'Schedule' : 'Details'}
+                      <span className="mt-2 text-sm font-medium text-gray-600">
+                        {stepNumber === 1 ? 'Service' : stepNumber === 2 ? 'Date & Time' : 'Details'}
                       </span>
                     </div>
                   ))}

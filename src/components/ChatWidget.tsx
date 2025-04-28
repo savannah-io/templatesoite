@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChatBubbleLeftIcon, XMarkIcon, PaperAirplaneIcon, QuestionMarkCircleIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon, PaperAirplaneIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 
 interface MessageOption {
   display: string;
@@ -205,488 +205,332 @@ const isValidEmail = (email: string): boolean => {
 };
 
 export default function ChatWidget() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [isMinimized, setIsMinimized] = useState(false)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [isConnecting, setIsConnecting] = useState(false)
-  const [connectionState, setConnectionState] = useState('')
-  const [bookingDetails, setBookingDetails] = useState<BookingDetails | undefined>()
-  const [isTyping, setIsTyping] = useState(false)
-  const [agentName, setAgentName] = useState('')
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [connectionState, setConnectionState] = useState('Connecting to agent...');
+  const [agentName, setAgentName] = useState(getRandomAgentName());
+  const [isTyping, setIsTyping] = useState(false);
+  const [bookingDetails, setBookingDetails] = useState<BookingDetails>({ state: 'collecting_name' });
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [dateOptions, setDateOptions] = useState<DateOption[]>(generateDateOptions());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages, isTyping])
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
-    if (isOpen && !agentName) {
-      setIsConnecting(true)
-      const name = getRandomAgentName()
-      
-      // Initial connection message
-      setConnectionState('Connecting to agent...')
-      
-      // After 1.5 seconds (reduced from 2.5), show connecting to specific agent
-      setTimeout(() => {
-        setConnectionState(`Connecting to ${name}...`)
-        
-        // After another 1.5 seconds (3 seconds total, reduced from 5), complete connection
-        setTimeout(() => {
-          setAgentName(name)
-          setIsConnecting(false)
-          
-          // First message
-          setIsTyping(true)
-          setTimeout(() => {
-            setIsTyping(false)
-            setMessages([
-              {
-                role: 'assistant',
-                content: `Hi there! I'm ${name}. Sorry to hear you're having car trouble.`
-              }
-            ])
-            
-            // Second message after 1.5 seconds (reduced from 3.5)
-            setTimeout(() => {
-              setIsTyping(true)
-              setTimeout(() => {
-                setIsTyping(false)
-                setMessages(prev => [...prev, {
-                  role: 'assistant',
-                  content: "Could you tell me a bit about the problems you're noticing with your car right now?"
-                }])
-                
-                // Third message after 1.5 seconds
-                setTimeout(() => {
-                  setIsTyping(true)
-                  setTimeout(() => {
-                    setIsTyping(false)
-                    setMessages(prev => [...prev, {
-                      role: 'assistant',
-                      content: "For example, any damage or mechanical issues?",
-                      options: ["Structural Damage", "Mechanical", "Windshield Damage", "Paint"]
-                    }])
-                  }, 1500)
-                }, 1500)
-              }, 1500)
-            }, 1500)
-          }, 1500)
-        }, 1500) // Complete 3 second connection (1500 + 1500)
-      }, 1500)
-    }
-  }, [isOpen, agentName])
+    // Simulate connection delay
+    const timer = setTimeout(() => {
+      setConnectionState(`Connected to ${agentName}`);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [agentName]);
 
   const handleOptionClick = async (option: string) => {
-    if (isLoading) return
-    
-    // Add the user's selection as a message
-    setMessages(prev => [...prev, { role: 'user', content: option }])
-    
-    // Show typing indicator
-    setIsTyping(true)
-    
-    // Wait 1 second before showing response (reduced from 2)
-    setTimeout(() => {
-      setIsTyping(false)
-      
-      if (option === "Yes, schedule an appointment") {
-        // Add the simplified response for scheduling
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: "Let's get that taken care of for you."
-        }])
-      } else {
-        // Add the response and immediately follow with booking prompt
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: "Ouch, that sounds frustrating! Thanks for sharing. Let's get that taken care of for you."
-        }])
-      }
+    setMessages(prev => [...prev, { role: 'user', content: option }]);
+    setIsTyping(true);
 
-      // Show typing for booking prompt
-      setTimeout(() => {
-        setIsTyping(true)
-        setTimeout(() => {
-          setIsTyping(false)
-          const dateOptions = generateDateOptions();
-          setMessages(prev => [...prev, {
+    // Simulate typing delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    let response: Message;
+    switch (bookingDetails.state) {
+      case 'collecting_name':
+        setBookingDetails(prev => ({ ...prev, name: option, state: 'collecting_phone' }));
+        response = {
+          role: 'assistant',
+          content: `Thanks ${option}! What's your phone number?`,
+          options: []
+        };
+        break;
+      case 'collecting_phone':
+        if (!isValidPhone(option)) {
+          response = {
             role: 'assistant',
-            content: "Choose a day this week to get your vehicle serviced:",
-            options: dateOptions.map(opt => opt.displayDate)
-          }])
-        }, 1000)
-      }, 1000)
-    }, 1000)
-  }
+            content: 'Please enter a valid 10-digit phone number.',
+            options: []
+          };
+        } else {
+          setBookingDetails(prev => ({ ...prev, phone: option, state: 'collecting_email' }));
+          response = {
+            role: 'assistant',
+            content: 'Great! What\'s your email address?',
+            options: []
+          };
+        }
+        break;
+      case 'collecting_email':
+        if (!isValidEmail(option)) {
+          response = {
+            role: 'assistant',
+            content: 'Please enter a valid email address.',
+            options: []
+          };
+        } else {
+          setBookingDetails(prev => ({ ...prev, email: option, state: 'collecting_car_make' }));
+          response = {
+            role: 'assistant',
+            content: 'What\'s the make of your vehicle?',
+            options: []
+          };
+        }
+        break;
+      case 'collecting_car_make':
+        setBookingDetails(prev => ({ ...prev, carMake: option, state: 'collecting_car_model' }));
+        response = {
+          role: 'assistant',
+          content: 'What\'s the model of your vehicle?',
+          options: []
+        };
+        break;
+      case 'collecting_car_model':
+        setBookingDetails(prev => ({ ...prev, carModel: option, state: 'confirming' }));
+        response = {
+          role: 'assistant',
+          content: 'Great! Let me confirm your details...',
+          options: []
+        };
+        break;
+      default:
+        response = {
+          role: 'assistant',
+          content: 'I\'m not sure what to do with that. Please try again.',
+          options: []
+        };
+    }
+
+    setMessages(prev => [...prev, response]);
+    setIsTyping(false);
+  };
 
   const handleDateSelection = async (selectedDate: string) => {
-    const dateOptions = generateDateOptions();
-    const selectedDateOption = dateOptions.find(opt => opt.displayDate === selectedDate);
-    
-    if (selectedDateOption) {
-      setMessages(prev => [...prev, { role: 'user', content: selectedDate }]);
-      setIsTyping(true);
-      
-      try {
-        console.log('Selected date option:', selectedDateOption);
-        const response = await fetch(`/api/calendar?date=${encodeURIComponent(selectedDateOption.date)}`);
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Calendar API error:', errorData);
-          throw new Error(errorData.error || 'Failed to fetch time slots');
-        }
-        
-        const data = await response.json();
-        console.log('Calendar API response:', data);
-        
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        
-        if (data.timeSlots) {
-          const availableSlots = (data.timeSlots as CalendarTimeSlot[]).filter(slot => slot.available);
-          console.log('Available slots:', availableSlots);
-          
-          if (availableSlots.length === 0) {
-            setIsTyping(false);
-            setMessages(prev => [...prev, {
-              role: 'assistant',
-              content: "I apologize, but there are no available time slots for this date. Would you like to try another day?",
-              options: dateOptions.map(opt => opt.displayDate)
-            }]);
-            return;
-          }
-          
-          setIsTyping(false);
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: `Available times for ${selectedDate}:`,
-            options: availableSlots.map((slot: CalendarTimeSlot) => ({
-              display: slot.time,
-              value: JSON.stringify({ startTime: slot.startTime, endTime: slot.endTime })
-            }))
-          }]);
-        }
-      } catch (error) {
-        console.error('Error fetching time slots:', error);
-        setIsTyping(false);
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: "I apologize, but I'm having trouble checking the calendar right now. Would you like to try another day or call us directly at (770) 495-0050?",
-          options: [
-            "Try Another Day",
-            "Call Now"
-          ]
-        }]);
-      }
-    }
+    setSelectedDate(selectedDate);
+    setIsTyping(true);
+
+    // Simulate API call to fetch time slots
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const timeSlots = [
+      { time: '9:00 AM', available: true, startTime: '09:00', endTime: '10:00' },
+      { time: '10:00 AM', available: true, startTime: '10:00', endTime: '11:00' },
+      { time: '11:00 AM', available: true, startTime: '11:00', endTime: '12:00' },
+      { time: '1:00 PM', available: true, startTime: '13:00', endTime: '14:00' },
+      { time: '2:00 PM', available: true, startTime: '14:00', endTime: '15:00' },
+      { time: '3:00 PM', available: true, startTime: '15:00', endTime: '16:00' },
+      { time: '4:00 PM', available: true, startTime: '16:00', endTime: '17:00' }
+    ];
+
+    setTimeSlots(timeSlots);
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: 'Here are the available time slots:',
+      options: timeSlots.map(slot => slot.time)
+    }]);
+    setIsTyping(false);
   };
 
   const handleTimeSelection = async (timeOption: string) => {
-    try {
-      const { startTime, endTime } = JSON.parse(timeOption);
-      
-      // Ensure we have a valid state before updating
-      setBookingDetails((prev) => {
-        if (!prev) return { state: 'collecting_name', startTime, endTime };
-        return {
-          ...prev,
-          state: 'collecting_name',
-          startTime,
-          endTime
-        };
-      });
-      
-      setMessages(prev => [...prev, { 
-        role: 'user', 
-        content: new Date(startTime).toLocaleTimeString() 
-      }]);
-      
-      setIsTyping(true);
-      
-      setTimeout(() => {
-        setIsTyping(false);
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: "What's your full name?"
-        }]);
-      }, 500);
-    } catch (error) {
-      console.error('Error handling time selection:', error);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: "I'm sorry, but there was an error processing your time selection. Would you like to try again?",
-        options: ["Select Another Time", "Try Another Day"]
-      }]);
+    const selectedSlot = timeSlots.find(slot => slot.time === timeOption);
+    if (selectedSlot && selectedDate) {
+      setBookingDetails(prev => ({
+        ...prev,
+        date: selectedDate,
+        time: selectedSlot.time,
+        startTime: selectedSlot.startTime,
+        endTime: selectedSlot.endTime
+      }));
     }
+
+    setIsTyping(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: 'Great! I\'ve scheduled your appointment. Would you like to receive a confirmation email?',
+      options: ['Yes, please', 'No, thanks']
+    }]);
+    setIsTyping(false);
   };
 
   const handleMessage = async (message: string) => {
-    setIsLoading(true);
-    
-    // Add user message immediately
     setMessages(prev => [...prev, { role: 'user', content: message }]);
-    
-    try {
-      // Check if message is a greeting
-      const isGreeting = /^(hi|hello|hey|greetings|good (morning|afternoon|evening))/i.test(message.toLowerCase());
-      
-      // If it's a greeting, reset the booking details
-      if (isGreeting) {
-        setBookingDetails(undefined);
-      }
-      
-      // Send message to chat API
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message,
-          bookingDetails: isGreeting ? undefined : bookingDetails
-        }),
-      });
+    setIsTyping(true);
 
-      if (!response.ok) {
-        throw new Error('Failed to get response');
-      }
+    // Simulate typing delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const data = await response.json();
-      
-      // Show typing indicator
-      setIsTyping(true);
-      
-      // Add a small delay to make the typing feel natural
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Update booking details if provided
-      if (data.bookingDetails) {
-        setBookingDetails(data.bookingDetails);
-      }
-      
-      // Add assistant's response
-      setMessages(prev => [...prev, {
+    let response: Message;
+    if (message.toLowerCase().includes('hello') || message.toLowerCase().includes('hi')) {
+      response = {
         role: 'assistant',
-        content: data.content,
-        options: data.options
-      }]);
-      
-    } catch (error) {
-      console.error('Chat error:', error);
-      setMessages(prev => [...prev, {
+        content: `Hello! I'm ${agentName}, how can I help you today?`,
+        options: ['Schedule an appointment', 'Get a quote', 'Ask a question']
+      };
+    } else if (message.toLowerCase().includes('schedule') || message.toLowerCase().includes('appointment')) {
+      response = {
         role: 'assistant',
-        content: "I apologize, but I'm having trouble processing your message. Please try again or call us at (770) 495-0050.",
-      }]);
-    } finally {
-      setIsTyping(false);
-      setIsLoading(false);
-      setInput('');
+        content: 'I\'d be happy to help you schedule an appointment. What\'s your name?',
+        options: []
+      };
+    } else if (message.toLowerCase().includes('quote') || message.toLowerCase().includes('estimate')) {
+      response = {
+        role: 'assistant',
+        content: 'I can help you get a quote. Could you describe the damage to your vehicle?',
+        options: []
+      };
+    } else {
+      response = {
+        role: 'assistant',
+        content: 'I\'m not sure I understand. Could you please rephrase that?',
+        options: ['Schedule an appointment', 'Get a quote', 'Ask a question']
+      };
     }
+
+    setMessages(prev => [...prev, response]);
+    setIsTyping(false);
   };
 
   const formatProblemSummary = (problem: string): string => {
-    const cleanProblem = problem.toLowerCase()
-      .replace(/my car|my vehicle|i have|there is|there's|got|has|had|having/g, '')
-      .trim()
-    
-    if (cleanProblem.includes('accident') || cleanProblem.includes('crash')) {
-      return `I understand you've been in an accident. Let's get your vehicle taken care of right away.`
-    } else if (cleanProblem.includes('dent') || cleanProblem.includes('ding')) {
-      return `I understand about the damage. Let's get that fixed up for you.`
-    } else if (cleanProblem.includes('scratch') || cleanProblem.includes('paint')) {
-      return `I understand about the paint damage. We can definitely help with that.`
-    } else if (cleanProblem.includes('headlight') || cleanProblem.includes('light')) {
-      return `I understand about the headlight issue. We can get that resolved for you.`
-    } else {
-      return `I understand the issue. Let's get that taken care of for you.`
-    }
-  }
+    // Format the problem description for display
+    return problem.length > 50 ? problem.substring(0, 50) + '...' : problem;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
-
-    const userMessage = input.trim();
-    setInput('');
-    await handleMessage(userMessage);
+    if (input.trim()) {
+      await handleMessage(input);
+      setInput('');
+    }
   };
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
       <AnimatePresence>
-        {isOpen && (
+        {isOpen ? (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className={`bg-white rounded-2xl shadow-2xl w-[400px] overflow-hidden border border-gray-100 ${!isMinimized ? 'mb-4' : ''}`}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="w-[400px] bg-white rounded-lg shadow-xl overflow-hidden"
           >
-            {/* Header - Always visible */}
-            <div 
-              className="bg-[#0088CC] p-4 text-white flex justify-between items-center cursor-pointer"
-              onClick={() => isMinimized && setIsMinimized(false)}
-            >
+            {/* Chat header */}
+            <div className="bg-gradient-to-r from-[#0088CC] to-[#006699] p-4 flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                {agentName && !isConnecting && (
-                  <div className="relative">
-                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-semibold text-lg border-2 border-white/20">
-                      {agentName[0]}
-                    </div>
-                    {isMinimized && messages.length > 0 && (
-                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[#0088CC]" />
-                    )}
-                  </div>
-                )}
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
+                  <div className="w-6 h-6 text-[#0088CC] font-semibold">{agentName[0]}</div>
+                </div>
                 <div>
-                  <h3 className="font-semibold text-lg">Chat with Us</h3>
-                  {agentName && !isConnecting && (
-                    <p className="text-sm text-blue-100">Speaking with {agentName}</p>
-                  )}
+                  <h3 className="text-white font-semibold">{agentName}</h3>
+                  <p className="text-white/80 text-sm">Online</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsMinimized(!isMinimized);
-                  }}
-                  className="text-white hover:text-blue-100 transition-colors p-1 hover:bg-white/10 rounded-lg"
-                >
-                  {isMinimized ? (
-                    <ChevronUpIcon className="h-6 w-6" />
-                  ) : (
-                    <ChevronDownIcon className="h-6 w-6" />
-                  )}
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsOpen(false);
-                    setAgentName('');
-                    setMessages([]);
-                    setConnectionState('');
-                    setIsMinimized(false);
-                  }}
-                  className="text-white hover:text-blue-100 transition-colors p-1 hover:bg-white/10 rounded-lg"
-                >
-                  <XMarkIcon className="h-6 w-6" />
-                </button>
-              </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-white/80 hover:text-white transition-colors"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
             </div>
 
-            {/* Chat Content - Only visible when not minimized */}
-            {!isMinimized && (
-              <>
-                {isConnecting ? (
-                  <ConnectingScreen connectionState={connectionState} agentName={agentName} />
-                ) : (
-                  <div className="h-[450px] overflow-y-auto p-5 bg-gradient-to-b from-gray-50 to-white">
-                    {messages.map((message, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-4`}
+            {/* Chat messages */}
+            <div className="h-[450px] overflow-y-auto p-4 space-y-4">
+              {connectionState !== 'Connected to ' + agentName ? (
+                <ConnectingScreen connectionState={connectionState} agentName={agentName} />
+              ) : (
+                <>
+                  {messages.map((message, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-lg p-3 ${
+                          message.role === 'user'
+                            ? 'bg-[#0088CC] text-white'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
                       >
-                        {message.role === 'assistant' && (
-                          <div className="flex-shrink-0 mr-2">
-                            <div className="w-8 h-8 rounded-full bg-[#0088CC] flex items-center justify-center text-white font-semibold text-sm">
-                              {agentName[0]}
-                            </div>
+                        <p>{message.content}</p>
+                        {message.options && message.options.length > 0 && (
+                          <div className="mt-2 space-y-2">
+                            {message.options.map((option, i) => (
+                              <button
+                                key={i}
+                                onClick={() => handleOptionClick(typeof option === 'string' ? option : option.value)}
+                                className={`block w-full text-left px-3 py-2 rounded-md text-sm ${
+                                  message.role === 'user'
+                                    ? 'bg-white/20 hover:bg-white/30'
+                                    : 'bg-white hover:bg-gray-50'
+                                }`}
+                              >
+                                {typeof option === 'string' ? option : option.display}
+                              </button>
+                            ))}
                           </div>
                         )}
-                        <div className={`max-w-[75%] ${message.role === 'user' ? 'bg-[#0088CC] text-white' : 'bg-gray-100 text-gray-800'} rounded-2xl px-4 py-2`}>
-                          <p>{message.content}</p>
-                          {message.options && (
-                            <div className="flex flex-wrap gap-2 mt-3">
-                              {message.options.map((option, optionIndex) => {
-                                const optionText = typeof option === 'string' ? option : option.display;
-                                const optionValue = typeof option === 'string' ? option : option.value;
-                                
-                                return (
-                                  <button
-                                    key={optionIndex}
-                                    onClick={() => {
-                                      if (message.content.includes("Choose a day")) {
-                                        handleDateSelection(optionValue);
-                                      } else if (message.content.includes("Available times for")) {
-                                        handleTimeSelection(optionValue);
-                                      } else {
-                                        handleOptionClick(optionValue);
-                                      }
-                                    }}
-                                    className="bg-white text-[#0088CC] hover:bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200 shadow-sm hover:shadow-md w-full text-left"
-                                  >
-                                    {optionText}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))}
-                    {isTyping && (
-                      <div className="mb-4">
-                        <TypingIndicator agentName={agentName} />
                       </div>
-                    )}
-                    <div ref={messagesEndRef} />
-                  </div>
-                )}
+                    </motion.div>
+                  ))}
+                  {isTyping && <TypingIndicator agentName={agentName} />}
+                  <div ref={messagesEndRef} />
+                </>
+              )}
+            </div>
 
-                {!isConnecting && (
-                  <form onSubmit={handleSubmit} className="p-4 border-t border-gray-100 bg-white">
-                    <div className="flex space-x-3">
-                      <input
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder="Type your message..."
-                        className="flex-1 p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0088CC] focus:ring-2 focus:ring-[#0088CC]/20 transition-all"
-                      />
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="bg-[#0088CC] text-white p-3 rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all"
-                      >
-                        <PaperAirplaneIcon className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </>
-            )}
+            {/* Chat input */}
+            <form onSubmit={handleSubmit} className="border-t border-gray-200 p-4">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Type your message..."
+                  className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#0088CC]"
+                />
+                <button
+                  type="submit"
+                  className="bg-[#0088CC] text-white rounded-lg px-4 py-2 hover:bg-[#006699] transition-colors"
+                >
+                  <PaperAirplaneIcon className="w-5 h-5" />
+                </button>
+              </div>
+            </form>
           </motion.div>
+        ) : (
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            onClick={() => setIsOpen(true)}
+            className="bg-[#0088CC] text-white rounded-full p-3 shadow-lg hover:bg-[#006699] transition-colors"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+              />
+            </svg>
+          </motion.button>
         )}
       </AnimatePresence>
-
-      {/* Initial chat button - Only shown when chat is completely closed */}
-      {!isOpen && (
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setIsOpen(true)}
-          className="bg-[#0088CC] text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center w-16 h-16"
-        >
-          {agentName ? (
-            <span className="text-2xl font-semibold">{agentName[0]}</span>
-          ) : (
-            <span className="text-4xl font-bold">?</span>
-          )}
-        </motion.button>
-      )}
     </div>
   );
 } 

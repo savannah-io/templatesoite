@@ -80,8 +80,8 @@ async function getBookedSlots(date: string) {
       });
 
       return bookedSlots;
-    } catch (error: any) {
-      if (error.message === 'invalid_grant') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'invalid_grant') {
         // Try to refresh the token
         const refreshed = await refreshAccessToken();
         if (refreshed) {
@@ -177,7 +177,7 @@ export async function GET(request: Request) {
       message: error.message,
       stack: error.stack,
       name: error.name,
-      response: (error as any).response?.data
+      response: error instanceof Error && 'response' in error ? (error as { response?: { data?: unknown } }).response?.data : undefined
     } : 'Unknown error';
     
     if (error instanceof Error && error.message === 'invalid_grant') {
