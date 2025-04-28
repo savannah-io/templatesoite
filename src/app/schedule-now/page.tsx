@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import { CheckIcon, ArrowLeftIcon, ArrowRightIcon, CalendarIcon, ClockIcon, UserIcon } from '@heroicons/react/24/outline';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
+import MouseFollowGradient from '@/components/MouseFollowGradient';
 
 interface TimeSlot {
   time: string;
@@ -18,6 +19,8 @@ interface TimeSlot {
 
 export default function ScheduleNow() {
   const [step, setStep] = useState(1);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string>('');
   const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -40,59 +43,38 @@ export default function ScheduleNow() {
   const today = startOfDay(new Date());
   const twoWeeksFromNow = addDays(today, 14);
 
-  // Generate available dates array for two weeks
-  const getAvailableDates = () => {
-    const dates = [];
-    for (let i = 0; i <= 14; i++) {
-      const date = addDays(today, i);
-      if (date.getDay() !== 0 && date.getDay() !== 6) {
-        dates.push(date);
-      }
-    }
-    return dates;
-  };
-
-  // Custom date filter for DatePicker
   const filterDate = (date: Date) => {
     const day = date.getDay();
-    return (
-      day !== 0 && // Sunday
-      day !== 6 && // Saturday
-      !isBefore(date, today) &&
-      !isAfter(date, twoWeeksFromNow)
-    );
+    return day !== 0 && day !== 6; // Disable Sundays (0) and Saturdays (6)
   };
 
   const fetchTimeSlots = async (date: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/calendar?date=${encodeURIComponent(date)}`);
-      if (!response.ok) throw new Error('Failed to fetch time slots');
+      const response = await fetch(`/api/calendar?date=${date}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch time slots');
+      }
       const data = await response.json();
-      setAvailableTimeSlots(data.timeSlots.filter((slot: TimeSlot) => slot.available));
-    } catch (err) {
-      setError('Failed to load available time slots');
-      console.error(err);
+      setAvailableTimeSlots(data.timeSlots);
+    } catch (error) {
+      console.error('Error fetching time slots:', error);
+      setAvailableTimeSlots([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDateSelection = (date: Date | null) => {
+    setSelectedDate(date);
     if (date) {
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      setFormData(prev => ({ ...prev, date: formattedDate }));
-      fetchTimeSlots(formattedDate);
+      const dateStr = date.toISOString().split('T')[0];
+      fetchTimeSlots(dateStr);
     }
   };
 
   const handleTimeSelection = (startTime: string, endTime: string, displayTime: string) => {
-    setFormData(prev => ({
-      ...prev,
-      time: displayTime,
-      startTime,
-      endTime
-    }));
+    setSelectedTime(displayTime);
   };
 
   const formatPhoneNumber = (input: string): string => {
@@ -154,9 +136,23 @@ export default function ScheduleNow() {
   ];
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       <Header />
       
+      {/* Hero Section */}
+      <section className="relative pt-24 pb-16 overflow-hidden bg-gradient-to-br from-primary-800 via-primary-700 to-primary-600">
+        <div className="container mx-auto px-4 relative">
+          <div className="max-w-3xl mx-auto text-center">
+            <h1 className="text-4xl md:text-5xl font-display font-bold text-white mb-6">
+              Schedule Your Service
+            </h1>
+            <p className="text-lg text-blue-50">
+              Let&apos;s get your vehicle back to its best condition
+            </p>
+          </div>
+        </div>
+      </section>
+
       <div className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -306,13 +302,21 @@ export default function ScheduleNow() {
                       exit={{ opacity: 0, x: 20 }}
                       className="space-y-6"
                     >
+                      <div className="text-center mb-8">
+                        <h2 className="text-3xl font-bold text-gray-900">
+                          Let&apos;s Schedule Your Appointment
+                        </h2>
+                        <p className="text-gray-600 mt-2">
+                          Choose a convenient date and time for your service
+                        </p>
+                      </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Preferred Date
                         </label>
                         <div className="calendar-wrapper flex justify-center">
                           <DatePicker
-                            selected={formData.date ? new Date(formData.date) : null}
+                            selected={selectedDate}
                             onChange={handleDateSelection}
                             filterDate={filterDate}
                             inline
@@ -407,7 +411,7 @@ export default function ScheduleNow() {
                         </div>
                       </div>
 
-                      {formData.date && (
+                      {selectedDate && (
                         <motion.div
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -428,7 +432,7 @@ export default function ScheduleNow() {
                                   type="button"
                                   onClick={() => handleTimeSelection(slot.startTime, slot.endTime, slot.time)}
                                   className={`p-3 text-sm rounded-lg font-medium transition-all duration-200 ${
-                                    formData.startTime === slot.startTime
+                                    selectedTime === slot.time
                                       ? 'bg-primary-600 text-white shadow-lg'
                                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                   }`}
@@ -459,9 +463,9 @@ export default function ScheduleNow() {
                         </motion.button>
                         <motion.button
                           type="button"
-                          onClick={() => (formData.date && formData.time) ? setStep(3) : null}
+                          onClick={() => (selectedDate && selectedTime) ? setStep(3) : null}
                           className="flex-1 bg-primary-600 text-white py-3 px-6 rounded-lg font-medium shadow-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 transition-all duration-200"
-                          disabled={!formData.date || !formData.time}
+                          disabled={!selectedDate || !selectedTime}
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                         >
@@ -598,11 +602,11 @@ export default function ScheduleNow() {
                         <p className="text-gray-600">
                           Your appointment has been scheduled for{' '}
                           <span className="font-medium text-gray-900">
-                            {format(new Date(formData.date), 'MMMM d, yyyy')}
+                            {format(selectedDate || new Date(), 'MMMM d, yyyy')}
                           </span>{' '}
                           at{' '}
                           <span className="font-medium text-gray-900">
-                            {formData.time}
+                            {selectedTime}
                           </span>
                           <br />
                           <span className="font-medium text-gray-900">

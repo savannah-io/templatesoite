@@ -22,16 +22,9 @@ interface TimeSlot {
   endTime: string;
 }
 
-interface SlotData {
-  available: boolean;
-  time: string;
-  startTime: string;
-  endTime: string;
-}
-
 interface DateSlots {
   date: string;
-  slots: SlotData[];
+  slots: TimeSlot[];
 }
 
 export default function BookingForm() {
@@ -265,7 +258,7 @@ export default function BookingForm() {
       <form onSubmit={handleSubmit} className="grid lg:grid-cols-2 gap-8 w-full max-w-7xl mx-auto">
         {/* Left Column - Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-          <h3 className="text-2xl font-bold text-gray-900 mb-6">What's going on with your vehicle today?</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-6">What&apos;s going on with your vehicle today?</h3>
           
           {/* Vehicle Issue Text Area */}
           <div className="mb-8">

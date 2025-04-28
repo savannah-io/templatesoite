@@ -29,9 +29,39 @@ import Image from 'next/image'
 // Add at the top of the file after the imports
 declare global {
   interface Window {
-    Tawk_API?: any;
+    Tawk_API?: {
+      onLoad?: () => void;
+      minimize?: () => void;
+    };
   }
 }
+
+// Add type for the icon prop
+interface SectionProps {
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  title: string;
+  children: React.ReactNode;
+}
+
+const Section: React.FC<SectionProps> = ({ icon: Icon, title, children }) => (
+  <div className="relative">
+    <div className="flex items-start gap-4 group">
+      <div className="flex-shrink-0 mt-1">
+        <div className="p-2 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-100 group-hover:text-blue-700 transition-colors duration-200">
+          <Icon className="w-5 h-5" />
+        </div>
+      </div>
+      <div className="flex-1">
+        <h4 className="font-semibold text-lg text-gray-900 group-hover:text-blue-600 transition-colors duration-200">
+          {title}
+        </h4>
+        <div className="mt-2 text-gray-600 space-y-3">
+          {children}
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 function ServicesContent() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
