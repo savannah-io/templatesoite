@@ -233,11 +233,9 @@ export async function POST(request: Request) {
       description: `Service Type: ${serviceType}\n\nCustomer Information:\nName: ${customerName}\nPhone: ${formattedPhone}\nEmail: ${customerEmail}\n\nVehicle Information:\nMake: ${carMake}\nModel: ${carModel}\n\nService Details:\n${serviceType}`,
       start: {
         dateTime: startTime,
-        timeZone: 'America/New_York',
       },
       end: {
         dateTime: endTime,
-        timeZone: 'America/New_York',
       },
       reminders: {
         useDefault: true
@@ -338,33 +336,25 @@ export async function POST(request: Request) {
   }
 }
 
-type CalendarEvent = {
+interface GoogleCalendarResponse {
+  items: CalendarEvent[];
+}
+
+interface CalendarEvent {
   summary: string;
   description: string;
   start: { dateTime: string };
   end: { dateTime: string };
-};
-
-type AppointmentData = {
-  date: string;
-  time: string;
-  service: string;
-  name: string;
-  email: string;
-  phone: string;
-};
-
-async function createCalendarEvent(data: AppointmentData): Promise<CalendarEvent> {
-  const event: CalendarEvent = {
-    summary: `Vehicle Service - ${data.name}`,
-    description: `Service: ${data.service}\nCustomer: ${data.name}\nPhone: ${data.phone}\nEmail: ${data.email}`,
-    start: { dateTime: new Date(data.date + ' ' + data.time).toISOString() },
-    end: { dateTime: new Date(new Date(data.date + ' ' + data.time).getTime() + 3600000).toISOString() }
+  reminders?: {
+    useDefault: boolean;
   };
-  return event;
 }
 
-interface GoogleCalendarResponse {
-  items: CalendarEvent[];
-  // Add other fields as needed
+interface GoogleApiError extends Error {
+  response?: {
+    data?: {
+      error?: string;
+      error_description?: string;
+    };
+  };
 } 

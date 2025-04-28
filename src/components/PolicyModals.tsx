@@ -30,7 +30,13 @@ declare global {
   }
 }
 
-const Section = ({ icon: Icon, title, children }: { icon: any, title: string, children: React.ReactNode }) => (
+interface SectionProps {
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  title: string;
+  children: React.ReactNode;
+}
+
+const Section = ({ icon: Icon, title, children }: SectionProps) => (
   <div className="relative">
     <div className="flex items-start gap-4 group">
       <div className="flex-shrink-0 mt-1">

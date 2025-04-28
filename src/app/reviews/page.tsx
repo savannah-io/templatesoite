@@ -91,7 +91,7 @@ export default function ReviewsPage() {
              Community  Reviews
             </h1>
             <p className="text-lg md:text-xl text-blue-50 leading-relaxed mx-auto">
-              We're grateful to have helped so many wonderful customers get back on the road safely. Here's what our community has to say.
+              We&apos;re proud of the work we do and the trust our customers place in us. Here&apos;s what they have to say about their experience with our services.
             </p>
             <div className="flex justify-center gap-6 mt-8">
               <div className="group relative">

@@ -32,11 +32,9 @@ export async function POST(request: Request) {
       description: `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nService: ${service}`,
       start: {
         dateTime: startDate.toISOString(),
-        timeZone: 'America/New_York',
       },
       end: {
         dateTime: endDate.toISOString(),
-        timeZone: 'America/New_York',
       },
       reminders: {
         useDefault: false,

@@ -17,11 +17,9 @@ interface CalendarEvent {
   description: string;
   start: {
     dateTime: string;
-    timeZone: string;
   };
   end: {
     dateTime: string;
-    timeZone: string;
   };
   attendees?: {
     email: string;
@@ -69,11 +67,9 @@ Notes: ${details.notes || 'None'}
         `.trim(),
         start: {
           dateTime: details.appointmentDate.toISOString(),
-          timeZone: 'America/New_York',
         },
         end: {
           dateTime: new Date(details.appointmentDate.getTime() + 60 * 60 * 1000).toISOString(), // 1 hour duration
-          timeZone: 'America/New_York',
         },
         reminders: {
           useDefault: false,
@@ -180,11 +176,9 @@ Notes: ${details.notes || 'None'}
       description: `Service: ${bookingDetails.service}\nName: ${bookingDetails.name}\nPhone: ${bookingDetails.phone}`,
       start: {
         dateTime: `${bookingDetails.date}T${bookingDetails.time}:00`,
-        timeZone: 'America/New_York'
       },
       end: {
         dateTime: `${bookingDetails.date}T${this.addHours(bookingDetails.time, 2)}:00`,
-        timeZone: 'America/New_York'
       },
       attendees: [
         {
@@ -194,20 +188,14 @@ Notes: ${details.notes || 'None'}
       ]
     };
     
-    // Here you would typically make the API call to create the event
-    // For now, we'll just return the event object
     return event;
   }
 
   async checkAvailability(): Promise<boolean> {
-    // Here you would typically check against your calendar API
-    // For now, we'll just return true
     return true;
   }
 
   async sendConfirmationEmail(bookingDetails: BookingDetails): Promise<void> {
-    // Here you would typically send the email
-    // For now, we'll just log
     console.log('Sending confirmation email:', bookingDetails);
   }
 
