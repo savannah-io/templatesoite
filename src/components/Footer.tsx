@@ -61,8 +61,8 @@ export default function Footer() {
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+      <div className="relative container mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand Section */}
           <div className="col-span-1">
             <motion.h2 
@@ -274,7 +274,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-16 pt-8 border-t border-gray-100">
+        <div className="mt-16 pt-8 border-t border-primary-500/20">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <motion.p 
               initial={{ opacity: 0 }}

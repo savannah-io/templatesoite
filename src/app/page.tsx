@@ -17,8 +17,9 @@ export default function Home() {
       {/* Hero Section */}
       <section className="hero-section min-h-[90vh] flex items-center relative pt-24 pb-28 bg-[url('/images/back3.png')] bg-cover bg-center">
         <MouseFollowGradient variant="dark" opacity={0.8} />
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-950/95 to-transparent pointer-events-none" style={{ height: '30%' }}></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-transparent pointer-events-none"></div>
+        {/* Main overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-600/50 via-primary-700/25 to-primary-800/40 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-primary-800/30 to-transparent pointer-events-none"></div>
         
         {/* Tech pattern overlay */}
         <div className="absolute inset-0 opacity-20">
@@ -108,8 +109,6 @@ export default function Home() {
 
       {/* Booking Section */}
       <section className="min-h-screen py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100"></div>
-        
         {/* Decorative patterns */}
         <div className="absolute inset-0 opacity-40">
           <div className="absolute top-0 left-0 w-full h-full" 
@@ -189,9 +188,9 @@ export default function Home() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-blue-50/30 via-transparent to-transparent"></div>
         </div>
 
-        <div className="container mx-auto px-4 relative">
+        <div className="container mx-auto px-4 relative pt-20">
           <motion.div 
-            className="max-w-3xl mx-auto text-center"
+            className="max-w-3xl mx-auto text-center mb-8"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -211,10 +210,10 @@ export default function Home() {
           </motion.div>
         </div>
 
-        <div className="py-12">
+        <div className="py-8">
           <div className="container mx-auto px-4 mb-6">
             <motion.p 
-              className="text-base text-gray-600 leading-relaxed max-w-2xl mx-auto text-center"
+              className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto text-center"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}

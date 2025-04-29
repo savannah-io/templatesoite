@@ -40,11 +40,11 @@ async function getBookedSlots(date: string) {
       hasRefreshToken: !!process.env.GOOGLE_REFRESH_TOKEN
     });
     
-    // Set up time range for the entire day
-    const startOfDay = new Date(date);
+    // Set up time range for the entire day in Eastern Time (ET)
+    const startOfDay = new Date(date + 'T00:00:00-04:00');  // -04:00 for ET
     startOfDay.setHours(9, 0, 0, 0);
     
-    const endOfDay = new Date(date);
+    const endOfDay = new Date(date + 'T00:00:00-04:00');  // -04:00 for ET
     endOfDay.setHours(17, 0, 0, 0);
 
     console.log('Fetching events between:', {
@@ -59,6 +59,7 @@ async function getBookedSlots(date: string) {
         timeMax: endOfDay.toISOString(),
         singleEvents: true,
         orderBy: 'startTime',
+        timeZone: 'America/New_York'  // Explicitly set timezone to ET
       });
 
       console.log('Calendar API Response:', {
@@ -92,6 +93,7 @@ async function getBookedSlots(date: string) {
             timeMax: endOfDay.toISOString(),
             singleEvents: true,
             orderBy: 'startTime',
+            timeZone: 'America/New_York'  // Explicitly set timezone to ET
           });
 
           const bookedSlots = new Set();
@@ -137,8 +139,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Date parameter is required' }, { status: 400 });
     }
 
-    // Ensure date is in correct format (YYYY-MM-DD)
-    const selectedDate = new Date(date);
+    // Ensure date is in correct format and convert to Eastern Time
+    const selectedDate = new Date(date + 'T00:00:00-04:00');  // -04:00 for ET
     if (isNaN(selectedDate.getTime())) {
       return NextResponse.json({ 
         error: 'Invalid date format',
@@ -155,13 +157,16 @@ export async function GET(request: Request) {
     const bookedSlots = await getBookedSlots(date);
     const timeSlots = [];
 
-    // Generate time slots from 9 AM to 5 PM
+    // Generate time slots from 9 AM to 5 PM in Eastern Time
     for (let hour = 9; hour <= 17; hour++) {
       const startTime = new Date(selectedDate);
       startTime.setHours(hour, 0, 0, 0);
       
+      // Convert current time to ET for comparison
+      const nowET = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      
       // Skip if the time slot is in the past
-      if (startTime < now) continue;
+      if (startTime < nowET) continue;
 
       // Check if the slot is available (not in bookedSlots)
       const available = !bookedSlots.has(hour);
