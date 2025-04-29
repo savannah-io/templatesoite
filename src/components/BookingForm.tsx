@@ -42,10 +42,70 @@ export default function BookingForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-
-  // State to store available slots for each date
   const [availableSlots, setAvailableSlots] = useState<DateSlots[]>([]);
-  const [datesLoading, setDatesLoading] = useState(true);
+  const [datesLoading, setDatesLoading] = useState(false);
+
+  // Function to fetch available slots for a specific date
+  const fetchSlotsForDate = async (date: Date) => {
+    try {
+      const dateStr = date.toISOString().split('T')[0];
+      const res = await fetch(`/api/calendar?date=${dateStr}`);
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error(`Failed to fetch slots for ${dateStr}:`, {
+          status: res.status,
+          statusText: res.statusText,
+          error: errorData
+        });
+        return { 
+          date: dateStr, 
+          slots: [] 
+        };
+      }
+
+      const data = await res.json();
+      
+      if (!data.timeSlots || !Array.isArray(data.timeSlots)) {
+        console.error(`Invalid slots data for ${dateStr}:`, data);
+        return {
+          date: dateStr,
+          slots: []
+        };
+      }
+
+      return { 
+        date: dateStr, 
+        slots: data.timeSlots.map((slot: TimeSlot) => ({
+          ...slot,
+          available: !!slot.available
+        }))
+      };
+    } catch (error) {
+      console.error(`Error fetching slots for date ${date}:`, error);
+      return { 
+        date: date.toISOString().split('T')[0], 
+        slots: [] 
+      };
+    }
+  };
+
+  // Function to fetch slots for the next 14 days
+  const fetchInitialSlots = async () => {
+    setDatesLoading(true);
+    try {
+      const days = generateCalendarWeeks()
+        .flat()
+        .filter((date): date is Date => date !== null);
+      
+      const slots = await Promise.all(days.map(fetchSlotsForDate));
+      setAvailableSlots(slots);
+    } catch (error) {
+      console.error('Error fetching initial slots:', error);
+    } finally {
+      setDatesLoading(false);
+    }
+  };
 
   // Format phone number as (XXX) XXX-XXXX
   const formatPhoneNumber = (input: string): string => {
@@ -74,15 +134,24 @@ export default function BookingForm() {
     return day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
   };
 
-  const handleDateClick = (e: React.MouseEvent, date: Date) => {
+  const handleDateClick = async (e: React.MouseEvent, date: Date) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only allow booking on weekdays
-    if (!isWeekend(date) && isDateAvailable(date)) {
+    
+    // Only proceed if it's a weekday
+    if (!isWeekend(date)) {
       setFormData(prev => ({
         ...prev,
-        appointmentDate: date
+        appointmentDate: date,
+        appointmentTime: '' // Reset time when date changes
       }));
+
+      // Fetch fresh slots for the selected date
+      const slotsForDate = await fetchSlotsForDate(date);
+      setAvailableSlots(prev => {
+        const otherDates = prev.filter(slot => slot.date !== slotsForDate.date);
+        return [...otherDates, slotsForDate];
+      });
     }
   };
 
@@ -108,7 +177,6 @@ export default function BookingForm() {
     }
 
     try {
-      // Log the form data for debugging
       console.log('Form Data:', formData);
 
       const appointmentTime = formData.appointmentTime;
@@ -121,7 +189,7 @@ export default function BookingForm() {
       
       const bookingData = {
         date: appointmentDate,
-        time: appointmentTime, // Send the original time string (e.g., "2:00 PM")
+        time: appointmentTime,
         service: formData.vehicleIssue,
         name: formData.fullName,
         email: formData.email,
@@ -152,6 +220,15 @@ export default function BookingForm() {
       console.log('API Success Response:', responseData);
       setSuccess(true);
       resetForm();
+
+      // Refresh slots for the date after successful booking
+      if (formData.appointmentDate) {
+        const updatedSlots = await fetchSlotsForDate(formData.appointmentDate);
+        setAvailableSlots(prev => {
+          const otherDates = prev.filter(slot => slot.date !== updatedSlots.date);
+          return [...otherDates, updatedSlots];
+        });
+      }
     } catch (error) {
       console.error('Submission Error:', error);
       setError(error instanceof Error ? error.message : 'Failed to book appointment. Please try again.');
@@ -223,66 +300,9 @@ export default function BookingForm() {
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  // Fetch available slots for the next 14 days
+  // Fetch initial slots when component mounts
   useEffect(() => {
-    const fetchSlots = async (days: Date[]) => {
-      setDatesLoading(true);
-      try {
-        const slots = await Promise.all(
-          days.map(async (date) => {
-            try {
-              const dateStr = date.toISOString().split('T')[0];
-              const res = await fetch(`/api/calendar?date=${dateStr}`);
-              
-              if (!res.ok) {
-                const errorData = await res.json();
-                console.error(`Failed to fetch slots for ${dateStr}:`, {
-                  status: res.status,
-                  statusText: res.statusText,
-                  error: errorData
-                });
-                return { 
-                  date: dateStr, 
-                  slots: [] 
-                };
-              }
-
-              const data = await res.json();
-              
-              if (!data.timeSlots || !Array.isArray(data.timeSlots)) {
-                console.error(`Invalid slots data for ${dateStr}:`, data);
-                return {
-                  date: dateStr,
-                  slots: []
-                };
-              }
-
-              return { 
-                date: dateStr, 
-                slots: data.timeSlots.map((slot: TimeSlot) => ({
-                  ...slot,
-                  available: !!slot.available
-                }))
-              };
-            } catch (error) {
-              console.error(`Error fetching slots for date ${date}:`, error);
-              return { 
-                date: date.toISOString().split('T')[0], 
-                slots: [] 
-              };
-            }
-          })
-        );
-        setAvailableSlots(slots);
-      } catch (error) {
-        console.error('Error fetching slots:', error);
-      } finally {
-        setDatesLoading(false);
-      }
-    };
-
-    const days = generateCalendarWeeks().flat().filter((date): date is Date => date !== null);
-    fetchSlots(days);
+    fetchInitialSlots();
   }, []);
 
   const isDateAvailable = (date: Date): boolean => {
@@ -464,25 +484,47 @@ export default function BookingForm() {
                   const sortedSlots = slots
                     .filter(slot => slot.available)
                     .sort((a, b) => {
-                      const timeA = a.time.split(':')[0];
-                      const timeB = b.time.split(':')[0];
-                      return parseInt(timeA) - parseInt(timeB);
+                      // Convert times to 24-hour format for proper sorting
+                      const getHour24 = (timeStr: string) => {
+                        const [time, period] = timeStr.split(' ');
+                        const [hourStr] = time.split(':');
+                        let hour = parseInt(hourStr);
+                        
+                        if (period === 'PM' && hour !== 12) {
+                          hour += 12;
+                        } else if (period === 'AM' && hour === 12) {
+                          hour = 0;
+                        }
+                        
+                        return hour;
+                      };
+
+                      const hourA = getHour24(a.time);
+                      const hourB = getHour24(b.time);
+                      
+                      return hourA - hourB;
                     });
 
-                  return sortedSlots.map((slot) => (
-                    <button
-                      type="button"
-                      key={slot.time}
-                      onClick={(e) => handleTimeClick(e, slot.time)}
-                      className={`p-2 rounded-lg border text-center transition-all duration-200 cursor-pointer hover:border-primary-200 ${
-                        formData.appointmentTime === slot.time
-                          ? 'border-primary-500 bg-primary-50 text-primary-700'
-                          : 'border-gray-200 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className="text-sm font-medium">{formatDisplayTime(slot.time)}</span>
-                    </button>
-                  ));
+                  return sortedSlots.length > 0 ? (
+                    sortedSlots.map(slot => (
+                      <button
+                        type="button"
+                        key={slot.time}
+                        onClick={(e) => handleTimeClick(e, slot.time)}
+                        className={`p-2 rounded-lg border text-center transition-all duration-200 cursor-pointer hover:border-primary-200 ${
+                          formData.appointmentTime === slot.time
+                            ? 'border-primary-500 bg-primary-50 text-primary-700'
+                            : 'border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="text-sm font-medium">{slot.time}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="col-span-full text-center text-gray-500 py-4">
+                      No available times for this date
+                    </div>
+                  );
                 })() : null}
               </div>
             </div>

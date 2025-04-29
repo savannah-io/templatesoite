@@ -2,14 +2,20 @@ import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 
-const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN, GOOGLE_CALENDAR_ID } = process.env;
-
-if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TOKEN || !GOOGLE_CALENDAR_ID) {
-  throw new Error('Missing required Google Calendar credentials in environment variables');
-}
-
 export async function GET() {
   try {
+    const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN, GOOGLE_CALENDAR_ID } = process.env;
+
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TOKEN || !GOOGLE_CALENDAR_ID) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Missing required Google Calendar credentials in environment variables'
+        },
+        { status: 500 }
+      );
+    }
+
     console.log('Testing Google Calendar integration...');
     
     // Create OAuth2 client

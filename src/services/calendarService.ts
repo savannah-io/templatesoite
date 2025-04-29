@@ -44,23 +44,40 @@ export class CalendarService {
   private readonly calendarTimezone = process.env.CALENDAR_TIMEZONE || 'America/New_York';
 
   constructor() {
+    const { GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY, GOOGLE_CALENDAR_ID } = process.env;
+
+    if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || !GOOGLE_CALENDAR_ID) {
+      console.error('Missing required Google Calendar credentials in environment variables');
+      // Instead of throwing, we'll initialize with null and handle errors in methods
+      this.calendar = null;
+      return;
+    }
+
     console.log('Initializing CalendarService with:', {
-      email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      calendarId: process.env.GOOGLE_CALENDAR_ID,
-      hasPrivateKey: !!process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      calendarId: GOOGLE_CALENDAR_ID,
+      hasPrivateKey: !!GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
     });
 
     const auth = new JWT({
-      email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, '\n'),
       scopes: ['https://www.googleapis.com/auth/calendar'],
     });
 
     this.calendar = google.calendar({ version: 'v3', auth });
   }
 
+  private checkCalendarInitialized() {
+    if (!this.calendar) {
+      throw new Error('Calendar service is not properly initialized. Please check your environment variables.');
+    }
+    return this.calendar;
+  }
+
   async createAppointment(details: AppointmentDetails) {
     try {
+      const calendar = this.checkCalendarInitialized();
       const event = {
         summary: `Auto Repair - ${details.customerName}`,
         description: `
@@ -87,7 +104,7 @@ Notes: ${details.notes || 'None'}
         },
       };
 
-      const response = await this.calendar.events.insert({
+      const response = await calendar.events.insert({
         calendarId: process.env.GOOGLE_CALENDAR_ID,
         requestBody: event,
         sendUpdates: 'all', // Send email notifications to attendees
@@ -112,9 +129,10 @@ Notes: ${details.notes || 'None'}
 
   async getAvailableSlots(startDate: Date, endDate: Date) {
     try {
+      const calendar = this.checkCalendarInitialized();
       console.log('Fetching slots from', startDate.toISOString(), 'to', endDate.toISOString());
       
-      const response = await this.calendar.events.list({
+      const response = await calendar.events.list({
         calendarId: process.env.GOOGLE_CALENDAR_ID,
         timeMin: startDate.toISOString(),
         timeMax: endDate.toISOString(),
@@ -125,15 +143,18 @@ Notes: ${details.notes || 'None'}
 
       console.log('Found existing events:', response.data.items?.length || 0);
 
-      // Business hours: 9 AM to 4 PM
-      const businessHours = {
-        morning: [
-          { hour: 1, period: 'PM' },
-          { hour: 2, period: 'PM' },
-          { hour: 3, period: 'PM' },
-          { hour: 4, period: 'PM' },
-        ]
-      };
+      // Define business hours: 9 AM to 5 PM
+      const businessHours = [
+        { hour: 9, period: 'AM' },
+        { hour: 10, period: 'AM' },
+        { hour: 11, period: 'AM' },
+        { hour: 12, period: 'PM' },
+        { hour: 1, period: 'PM' },
+        { hour: 2, period: 'PM' },
+        { hour: 3, period: 'PM' },
+        { hour: 4, period: 'PM' },
+        { hour: 5, period: 'PM' }
+      ];
 
       // Generate available slots
       const availableSlots = this.generateAvailableSlots(
@@ -157,10 +178,7 @@ Notes: ${details.notes || 'None'}
   private generateAvailableSlots(
     startDate: Date,
     endDate: Date,
-    businessHours: { 
-      morning?: Array<{ hour: number, period: string }>,
-      afternoon?: Array<{ hour: number, period: string }>
-    },
+    businessHours: Array<{ hour: number, period: string }>,
     existingEvents: calendar_v3.Schema$Event[]
   ) {
     const slots = [];
@@ -179,20 +197,7 @@ Notes: ${details.notes || 'None'}
 
     while (currentDate <= endDate) {
       if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) { // Skip weekends
-        // Define business hours: 9 AM to 5 PM
-        const hours = [
-          { hour: 9, period: 'AM' },
-          { hour: 10, period: 'AM' },
-          { hour: 11, period: 'AM' },
-          { hour: 12, period: 'PM' },
-          { hour: 1, period: 'PM' },
-          { hour: 2, period: 'PM' },
-          { hour: 3, period: 'PM' },
-          { hour: 4, period: 'PM' },
-          { hour: 5, period: 'PM' }
-        ];
-
-        for (const time of hours) {
+        for (const time of businessHours) {
           const slotStart = new Date(currentDate);
           let hour24 = time.period === 'PM' && time.hour !== 12 ? time.hour + 12 : time.hour;
           if (time.period === 'AM' && time.hour === 12) hour24 = 0;
@@ -224,7 +229,8 @@ Notes: ${details.notes || 'None'}
             slots.push({
               start: slotStart,
               end: slotEnd,
-              displayTime: `${time.hour}:00 ${time.period}`
+              time: `${time.hour}:00 ${time.period}`,
+              available: true
             });
           }
         }
@@ -238,6 +244,7 @@ Notes: ${details.notes || 'None'}
 
   async createCalendarEvent(bookingDetails: BookingDetails): Promise<CalendarEvent> {
     try {
+      const calendar = this.checkCalendarInitialized();
       console.log('Raw booking details:', bookingDetails);
 
       // Parse the time properly
@@ -269,7 +276,7 @@ Notes: ${details.notes || 'None'}
       const startDate = new Date(startDateTime);
       const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hour later
 
-      const response = await this.calendar.events.list({
+      const response = await calendar.events.list({
         calendarId: process.env.GOOGLE_CALENDAR_ID,
         timeMin: startDate.toISOString(),
         timeMax: endDate.toISOString(),
@@ -303,7 +310,7 @@ Phone: ${bookingDetails.phone}
 
       console.log('Final event object:', JSON.stringify(event, null, 2));
 
-      const createResponse = await this.calendar.events.insert({
+      const createResponse = await calendar.events.insert({
         calendarId: process.env.GOOGLE_CALENDAR_ID,
         requestBody: event,
         sendUpdates: 'none'
@@ -319,6 +326,7 @@ Phone: ${bookingDetails.phone}
   }
 
   async checkAvailability(): Promise<boolean> {
+    const calendar = this.checkCalendarInitialized();
     return true;
   }
 
