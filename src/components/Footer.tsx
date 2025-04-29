@@ -62,7 +62,7 @@ export default function Footer() {
       </div>
 
       <div className="relative container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-6xl mx-auto">
           {/* Brand Section */}
           <div className="col-span-1">
             <motion.h2 
@@ -127,7 +127,7 @@ export default function Footer() {
           </div>
 
           {/* Quick Links */}
-          <div>
+          <div className="col-span-1 md:ml-8">
             <motion.h3 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -161,7 +161,7 @@ export default function Footer() {
           </div>
 
           {/* Contact Info */}
-          <div>
+          <div className="col-span-1">
             <motion.h3 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -221,7 +221,7 @@ export default function Footer() {
           </div>
 
           {/* Info Section */}
-          <div>
+          <div className="col-span-1">
             <motion.h3 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -274,7 +274,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-16 pt-8 border-t border-primary-500/20">
+        <div className="mt-16 pt-8 border-t border-primary-500/20 max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <motion.p 
               initial={{ opacity: 0 }}
