@@ -100,19 +100,39 @@ export default function BookingForm() {
     setError('');
 
     try {
-      const appointmentTime = `${formData.appointmentDate.toISOString().split('T')[0]}T${formData.appointmentTime}:00`;
+      // Log the form data for debugging
+      console.log('Form Data:', formData);
+
+      const appointmentTime = formData.appointmentTime;
+      const appointmentDate = formData.appointmentDate?.toISOString().split('T')[0];
+      
+      console.log('Date and Time:', { appointmentDate, appointmentTime });
+
+      // Create the date object with the correct time
+      const [hours, minutes] = appointmentTime.split(':');
+      const date = new Date(appointmentDate);
+      date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+      
+      // Ensure we're using the local timezone
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const isoTimestamp = date.toISOString();
+
+      console.log('Final ISO Timestamp:', isoTimestamp);
+      
       const bookingData = {
-        customerName: formData.fullName,
-        customerPhone: formData.phoneNumber,
-        customerEmail: formData.email,
-        serviceType: formData.vehicleIssue,
-        startTime: appointmentTime,
-        endTime: new Date(new Date(appointmentTime).getTime() + 60 * 60 * 1000).toISOString(),
-        carMake: formData.carMake,
-        carModel: formData.carModel,
+        date: isoTimestamp,
+        service: formData.vehicleIssue,
+        name: formData.fullName,
+        email: formData.email,
+        phone: formData.phoneNumber,
+        carMake: formData.carMake || '',
+        carModel: formData.carModel || '',
+        timezone
       };
 
-      const apiResponse = await fetch(`${process.env.NEXT_PUBLIC_WEBSITE_URL}/api/calendar`, {
+      console.log('Sending booking data:', bookingData);
+
+      const apiResponse = await fetch(`/api/calendar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -122,15 +142,18 @@ export default function BookingForm() {
 
       if (!apiResponse.ok) {
         const errorData = await apiResponse.json();
+        console.error('API Error Response:', errorData);
         setError(errorData.message || 'Failed to book appointment');
         return;
       }
 
-      await apiResponse.json();
+      const responseData = await apiResponse.json();
+      console.log('API Success Response:', responseData);
       setSuccess(true);
       resetForm();
     } catch (error) {
-      setError('Failed to book appointment. Please try again.');
+      console.error('Submission Error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to book appointment. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -179,9 +202,17 @@ export default function BookingForm() {
   };
 
   const timeSlots = [
-    '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
-    '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'
+    '09:00', '10:00', '11:00', '12:00',
+    '13:00', '14:00', '15:00', '16:00'
   ];
+
+  const formatDisplayTime = (time: string): string => {
+    const [hours] = time.split(':');
+    const hour = parseInt(hours, 10);
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:00 ${period}`;
+  };
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -248,6 +279,30 @@ export default function BookingForm() {
   }, []);
 
   const isDateAvailable = (date: Date): boolean => {
+    // Sunday is not available
+    if (date.getDay() === 0) return false;
+
+    // Check if date is today
+    const today = new Date();
+    const isToday = date.toDateString() === today.toDateString();
+
+    if (isToday) {
+      // For today, check if we're within 2 hours of current time
+      const now = new Date();
+      const twoHoursFromNow = new Date(now.getTime() + (2 * 60 * 60 * 1000));
+      const dateStr = date.toISOString().split('T')[0];
+      const slotsForDate = availableSlots.find(slot => slot.date === dateStr);
+      
+      if (!slotsForDate) return false;
+
+      // Check if any slots are available after the 2-hour buffer
+      return slotsForDate.slots.some(slot => {
+        const slotTime = new Date(`${dateStr}T${slot.time}`);
+        return slot.available && slotTime > twoHoursFromNow;
+      });
+    }
+
+    // For future dates, check if there are any available slots
     const dateStr = date.toISOString().split('T')[0];
     const slotsForDate = availableSlots.find(slot => slot.date === dateStr);
     return slotsForDate?.slots.some(slot => slot.available) ?? false;
@@ -362,26 +417,33 @@ export default function BookingForm() {
           {/* Calendar */}
           <div className="mb-8">
             <div className="grid gap-1">
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {weekDays.map((day, index) => (
+                  <div key={index} className="text-center text-sm text-gray-500">
+                    {day}
+                  </div>
+                ))}
+              </div>
               {generateCalendarWeeks().map((week, wIdx) => (
                 <div key={wIdx} className="grid grid-cols-7 gap-1">
                   {week.map((date, dIdx) => (
-                    date && isDateAvailable(date) ? (
+                    date ? (
                       <button
                         type="button"
                         key={dIdx}
                         onClick={(e) => {
-                          if (date.getDay() !== 0 && date.getDay() !== 6) handleDateClick(e, date);
+                          if (isDateAvailable(date)) handleDateClick(e, date);
                         }}
-                        className={`p-2 rounded-lg border text-center transition-all duration-200 cursor-pointer hover:border-primary-200 ${
+                        className={`p-2 rounded-lg border text-center transition-all duration-200 cursor-pointer ${
                           date.toDateString() === formData.appointmentDate?.toDateString()
                             ? 'border-primary-500 bg-primary-50 text-primary-700'
-                            : 'border-gray-200 hover:bg-gray-50'
-                        } ${
-                          (date.getDay() === 0 || date.getDay() === 6)
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50 hover:border-gray-200'
-                            : ''
+                            : date.getDay() === 0
+                            ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
+                            : isDateAvailable(date)
+                            ? 'border-gray-200 hover:border-primary-200 hover:bg-gray-50'
+                            : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
                         }`}
-                        disabled={date.getDay() === 0 || date.getDay() === 6}
+                        disabled={!isDateAvailable(date)}
                       >
                         <span className="text-xs text-gray-500 block">
                           {date.toLocaleDateString('en-US', { weekday: 'short' })}
@@ -419,7 +481,7 @@ export default function BookingForm() {
                             : 'border-gray-200 hover:bg-gray-50'
                         }`}
                       >
-                        <span className="text-sm font-medium">{slot.time}</span>
+                        <span className="text-sm font-medium">{formatDisplayTime(slot.time)}</span>
                       </button>
                     ))
                 })() : null}

@@ -17,9 +17,11 @@ interface CalendarEvent {
   description: string;
   start: {
     dateTime: string;
+    timeZone: string;
   };
   end: {
     dateTime: string;
+    timeZone: string;
   };
   attendees?: {
     email: string;
@@ -34,24 +36,27 @@ interface BookingDetails {
   name: string;
   phone: string;
   email: string;
+  timezone?: string;
 }
 
 export class CalendarService {
   private calendar;
-  private auth: JWT;
+  private readonly calendarTimezone = process.env.CALENDAR_TIMEZONE || 'America/New_York';
 
   constructor() {
-    if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY) {
-      throw new Error('Missing required Google Calendar credentials in environment variables');
-    }
-
-    this.auth = new JWT({
+    console.log('Initializing CalendarService with:', {
       email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, '\n'), // Handle escaped newlines
+      calendarId: process.env.GOOGLE_CALENDAR_ID,
+      hasPrivateKey: !!process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+    });
+
+    const auth = new JWT({
+      email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n'),
       scopes: ['https://www.googleapis.com/auth/calendar'],
     });
 
-    this.calendar = google.calendar({ version: 'v3', auth: this.auth });
+    this.calendar = google.calendar({ version: 'v3', auth });
   }
 
   async createAppointment(details: AppointmentDetails) {
@@ -67,9 +72,11 @@ Notes: ${details.notes || 'None'}
         `.trim(),
         start: {
           dateTime: details.appointmentDate.toISOString(),
+          timeZone: this.calendarTimezone,
         },
         end: {
-          dateTime: new Date(details.appointmentDate.getTime() + 60 * 60 * 1000).toISOString(), // 1 hour duration
+          dateTime: new Date(details.appointmentDate.getTime() + 60 * 60 * 1000).toISOString(),
+          timeZone: this.calendarTimezone,
         },
         reminders: {
           useDefault: false,
@@ -83,6 +90,7 @@ Notes: ${details.notes || 'None'}
       const response = await this.calendar.events.insert({
         calendarId: process.env.GOOGLE_CALENDAR_ID,
         requestBody: event,
+        sendUpdates: 'all', // Send email notifications to attendees
       });
 
       return {
@@ -92,6 +100,9 @@ Notes: ${details.notes || 'None'}
       };
     } catch (error: unknown) {
       console.error('Calendar creation error:', error);
+      if ((error as any).response?.data?.error) {
+        console.error('Google Calendar API error:', (error as any).response.data.error);
+      }
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -107,88 +118,60 @@ Notes: ${details.notes || 'None'}
         timeMax: endDate.toISOString(),
         singleEvents: true,
         orderBy: 'startTime',
+        timeZone: this.calendarTimezone,
       });
 
-      // Business hours: 9 AM to 5 PM
-      const businessHours = {
-        start: 9,
-        end: 17,
-      };
-
-      // Generate available 1-hour slots
-      const availableSlots = this.generateAvailableSlots(
-        startDate,
-        endDate,
-        businessHours,
-        response.data.items || []
-      );
-
-      return availableSlots;
+      // Return the existing events with their start and end times
+      return (response.data.items || []).map(event => ({
+        start: event.start?.dateTime || event.start?.date,
+        end: event.end?.dateTime || event.end?.date
+      }));
     } catch (error: unknown) {
       console.error('Error fetching calendar slots:', error);
+      if ((error as any).response?.data?.error) {
+        console.error('Google Calendar API error:', (error as any).response.data.error);
+      }
       throw error;
     }
   }
 
-  private generateAvailableSlots(
-    startDate: Date,
-    endDate: Date,
-    businessHours: { start: number; end: number },
-    existingEvents: calendar_v3.Schema$Event[]
-  ) {
-    const slots = [];
-    const currentDate = new Date(startDate);
-
-    while (currentDate <= endDate) {
-      if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) { // Skip weekends
-        for (let hour = businessHours.start; hour < businessHours.end; hour++) { // 1-hour blocks
-          const slotStart = new Date(currentDate.setHours(hour, 0, 0, 0));
-          const slotEnd = new Date(currentDate.setHours(hour + 1, 0, 0, 0));
-
-          const isAvailable = !existingEvents.some(event => {
-            if (!event.start?.dateTime || !event.end?.dateTime) return false;
-            const eventStart = new Date(event.start.dateTime);
-            const eventEnd = new Date(event.end.dateTime);
-            return (
-              (slotStart >= eventStart && slotStart < eventEnd) ||
-              (slotEnd > eventStart && slotEnd <= eventEnd)
-            );
-          });
-
-          if (isAvailable) {
-            slots.push({
-              start: new Date(slotStart),
-              end: new Date(slotEnd),
-            });
-          }
-        }
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
-      currentDate.setHours(0, 0, 0, 0);
-    }
-
-    return slots;
-  }
-
   async createCalendarEvent(bookingDetails: BookingDetails): Promise<CalendarEvent> {
-    const event: CalendarEvent = {
-      summary: `Auto Service Appointment - ${bookingDetails.service}`,
-      description: `Service: ${bookingDetails.service}\nName: ${bookingDetails.name}\nPhone: ${bookingDetails.phone}`,
-      start: {
-        dateTime: `${bookingDetails.date}T${bookingDetails.time}:00`,
-      },
-      end: {
-        dateTime: `${bookingDetails.date}T${this.addHours(bookingDetails.time, 2)}:00`,
-      },
-      attendees: [
-        {
-          email: bookingDetails.email,
-          name: bookingDetails.name
+    try {
+      console.log('Creating calendar event with details:', bookingDetails);
+
+      const event: CalendarEvent = {
+        summary: `Auto Service Appointment - ${bookingDetails.service}`,
+        description: `
+Service: ${bookingDetails.service}
+Name: ${bookingDetails.name}
+Email: ${bookingDetails.email}
+Phone: ${bookingDetails.phone}
+        `.trim(),
+        start: {
+          dateTime: `${bookingDetails.date}T${bookingDetails.time}:00`,
+          timeZone: bookingDetails.timezone || this.calendarTimezone,
+        },
+        end: {
+          dateTime: `${bookingDetails.date}T${this.addHours(bookingDetails.time, 2)}:00`,
+          timeZone: bookingDetails.timezone || this.calendarTimezone,
         }
-      ]
-    };
-    
-    return event;
+      };
+
+      console.log('Sending event to Google Calendar:', event);
+
+      const response = await this.calendar.events.insert({
+        calendarId: process.env.GOOGLE_CALENDAR_ID,
+        requestBody: event,
+        sendUpdates: 'none'
+      });
+
+      console.log('Google Calendar response:', response.data);
+      
+      return event;
+    } catch (error) {
+      console.error('Error creating calendar event:', error);
+      throw error;
+    }
   }
 
   async checkAvailability(): Promise<boolean> {

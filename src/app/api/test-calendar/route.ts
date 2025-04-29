@@ -1,28 +1,34 @@
 import { NextResponse } from 'next/server';
-import { createCalendarEvent } from '@/utils/calendar';
+import { CalendarService } from '@/services/calendarService';
 
 export async function GET() {
   try {
-    // Create a test event 1 hour from now
-    const startTime = new Date();
-    startTime.setHours(startTime.getHours() + 1);
+    const calendarService = new CalendarService();
     
-    const endTime = new Date(startTime);
-    endTime.setHours(endTime.getHours() + 1);
-
-    const event = await createCalendarEvent(
-      'Test Booking',
-      'This is a test booking to verify calendar integration',
-      startTime,
-      endTime
+    // Test date range (today and tomorrow)
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 1);
+    
+    const availableSlots = await calendarService.getAvailableSlots(
+      startDate,
+      endDate
     );
 
-    return NextResponse.json({ success: true, event });
+    return NextResponse.json({
+      success: true,
+      message: 'Calendar service is working',
+      availableSlots,
+      serviceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      calendarId: process.env.GOOGLE_CALENDAR_ID,
+      timezone: process.env.CALENDAR_TIMEZONE
+    });
   } catch (error) {
-    console.error('Calendar test failed:', error);
-    return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    console.error('Calendar test error:', error);
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: process.env.NODE_ENV === 'development' ? error : undefined
+    }, { status: 500 });
   }
 } 
