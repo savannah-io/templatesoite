@@ -112,6 +112,8 @@ Notes: ${details.notes || 'None'}
 
   async getAvailableSlots(startDate: Date, endDate: Date) {
     try {
+      console.log('Fetching slots from', startDate.toISOString(), 'to', endDate.toISOString());
+      
       const response = await this.calendar.events.list({
         calendarId: process.env.GOOGLE_CALENDAR_ID,
         timeMin: startDate.toISOString(),
@@ -121,11 +123,28 @@ Notes: ${details.notes || 'None'}
         timeZone: this.calendarTimezone,
       });
 
-      // Return the existing events with their start and end times
-      return (response.data.items || []).map(event => ({
-        start: event.start?.dateTime || event.start?.date,
-        end: event.end?.dateTime || event.end?.date
-      }));
+      console.log('Found existing events:', response.data.items?.length || 0);
+
+      // Business hours: 9 AM to 4 PM
+      const businessHours = {
+        morning: [
+          { hour: 1, period: 'PM' },
+          { hour: 2, period: 'PM' },
+          { hour: 3, period: 'PM' },
+          { hour: 4, period: 'PM' },
+        ]
+      };
+
+      // Generate available slots
+      const availableSlots = this.generateAvailableSlots(
+        startDate,
+        endDate,
+        businessHours,
+        response.data.items || []
+      );
+
+      console.log('Generated available slots:', availableSlots.length);
+      return availableSlots;
     } catch (error: unknown) {
       console.error('Error fetching calendar slots:', error);
       if ((error as any).response?.data?.error) {
@@ -135,9 +154,134 @@ Notes: ${details.notes || 'None'}
     }
   }
 
+  private generateAvailableSlots(
+    startDate: Date,
+    endDate: Date,
+    businessHours: { 
+      morning?: Array<{ hour: number, period: string }>,
+      afternoon?: Array<{ hour: number, period: string }>
+    },
+    existingEvents: calendar_v3.Schema$Event[]
+  ) {
+    const slots = [];
+    const currentDate = new Date(startDate);
+
+    // Convert existing events to local timezone for comparison
+    const bookedSlots = existingEvents.map(event => {
+      if (!event.start?.dateTime || !event.end?.dateTime) return null;
+      return {
+        start: new Date(event.start.dateTime),
+        end: new Date(event.end.dateTime)
+      };
+    }).filter(Boolean);
+
+    console.log('Booked slots:', JSON.stringify(bookedSlots, null, 2));
+
+    while (currentDate <= endDate) {
+      if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) { // Skip weekends
+        // Define business hours: 9 AM to 5 PM
+        const hours = [
+          { hour: 9, period: 'AM' },
+          { hour: 10, period: 'AM' },
+          { hour: 11, period: 'AM' },
+          { hour: 12, period: 'PM' },
+          { hour: 1, period: 'PM' },
+          { hour: 2, period: 'PM' },
+          { hour: 3, period: 'PM' },
+          { hour: 4, period: 'PM' },
+          { hour: 5, period: 'PM' }
+        ];
+
+        for (const time of hours) {
+          const slotStart = new Date(currentDate);
+          let hour24 = time.period === 'PM' && time.hour !== 12 ? time.hour + 12 : time.hour;
+          if (time.period === 'AM' && time.hour === 12) hour24 = 0;
+          
+          slotStart.setHours(hour24, 0, 0, 0);
+          const slotEnd = new Date(slotStart.getTime() + (60 * 60 * 1000)); // 1 hour slots
+
+          console.log(`Checking availability for slot: ${slotStart.toISOString()} - ${slotEnd.toISOString()}`);
+
+          // Check if slot overlaps with any booked slots
+          const isBooked = bookedSlots.some(bookedSlot => {
+            if (!bookedSlot) return false;
+            
+            const overlap = (
+              (slotStart >= bookedSlot.start && slotStart < bookedSlot.end) ||
+              (slotEnd > bookedSlot.start && slotEnd <= bookedSlot.end) ||
+              (slotStart <= bookedSlot.start && slotEnd >= bookedSlot.end)
+            );
+
+            if (overlap) {
+              console.log(`Slot overlaps with booked appointment: ${bookedSlot.start} - ${bookedSlot.end}`);
+            }
+
+            return overlap;
+          });
+
+          if (!isBooked) {
+            console.log(`Adding available slot: ${time.hour}:00 ${time.period}`);
+            slots.push({
+              start: slotStart,
+              end: slotEnd,
+              displayTime: `${time.hour}:00 ${time.period}`
+            });
+          }
+        }
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+      currentDate.setHours(0, 0, 0, 0);
+    }
+
+    return slots;
+  }
+
   async createCalendarEvent(bookingDetails: BookingDetails): Promise<CalendarEvent> {
     try {
-      console.log('Creating calendar event with details:', bookingDetails);
+      console.log('Raw booking details:', bookingDetails);
+
+      // Parse the time properly
+      const [time, period] = bookingDetails.time.split(' ');
+      console.log('Split time and period:', { time, period });
+
+      const [hour, minute] = time.split(':');
+      console.log('Split hour and minute:', { hour, minute });
+
+      let hour24 = parseInt(hour);
+      console.log('Initial hour24:', hour24);
+      
+      // Convert to 24-hour format
+      if (period?.toUpperCase() === 'PM' && hour24 < 12) {
+        hour24 += 12;
+      } else if (period?.toUpperCase() === 'AM' && hour24 === 12) {
+        hour24 = 0;
+      }
+      console.log('Converted hour24:', hour24);
+
+      // Format time in 24-hour format
+      const time24 = `${hour24.toString().padStart(2, '0')}:00`;
+      console.log('Final time24:', time24);
+
+      const startDateTime = `${bookingDetails.date}T${time24}:00`;
+      console.log('Start DateTime:', startDateTime);
+
+      // Check if the slot is still available
+      const startDate = new Date(startDateTime);
+      const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hour later
+
+      const response = await this.calendar.events.list({
+        calendarId: process.env.GOOGLE_CALENDAR_ID,
+        timeMin: startDate.toISOString(),
+        timeMax: endDate.toISOString(),
+        singleEvents: true,
+        orderBy: 'startTime',
+        timeZone: this.calendarTimezone,
+      });
+
+      // If there are any events in this time slot, it's not available
+      if (response.data.items && response.data.items.length > 0) {
+        throw new Error('This time slot is no longer available. Please select a different time.');
+      }
 
       const event: CalendarEvent = {
         summary: `Auto Service Appointment - ${bookingDetails.service}`,
@@ -148,24 +292,24 @@ Email: ${bookingDetails.email}
 Phone: ${bookingDetails.phone}
         `.trim(),
         start: {
-          dateTime: `${bookingDetails.date}T${bookingDetails.time}:00`,
+          dateTime: startDateTime,
           timeZone: bookingDetails.timezone || this.calendarTimezone,
         },
         end: {
-          dateTime: `${bookingDetails.date}T${this.addHours(bookingDetails.time, 2)}:00`,
+          dateTime: `${bookingDetails.date}T${this.addHours(time24, 1)}:00`,
           timeZone: bookingDetails.timezone || this.calendarTimezone,
         }
       };
 
-      console.log('Sending event to Google Calendar:', event);
+      console.log('Final event object:', JSON.stringify(event, null, 2));
 
-      const response = await this.calendar.events.insert({
+      const createResponse = await this.calendar.events.insert({
         calendarId: process.env.GOOGLE_CALENDAR_ID,
         requestBody: event,
         sendUpdates: 'none'
       });
 
-      console.log('Google Calendar response:', response.data);
+      console.log('Google Calendar response:', createResponse.data);
       
       return event;
     } catch (error) {
@@ -183,8 +327,8 @@ Phone: ${bookingDetails.phone}
   }
 
   private addHours(time: string, hours: number): string {
-    const [h, m] = time.split(':').map(Number);
+    const [h] = time.split(':').map(Number);
     const newHour = (h + hours) % 24;
-    return `${newHour.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    return `${newHour.toString().padStart(2, '0')}:00`;
   }
 } 

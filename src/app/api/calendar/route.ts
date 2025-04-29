@@ -38,89 +38,57 @@ export async function GET(request: Request) {
       );
     }
 
-    // Don't allow bookings on Sundays
-    if (startDate.getDay() === 0) {
-      return NextResponse.json({ timeSlots: [] });
-    }
-
     const calendarService = new CalendarService();
-    const existingEvents = await calendarService.getAvailableSlots(startDate, endDate);
+    const availableSlots = await calendarService.getAvailableSlots(
+      startDate,
+      endDate
+    );
 
-    console.log('Existing events:', existingEvents);
+    // Convert slots to the format expected by the frontend
+    const timeSlots = availableSlots.map(slot => {
+      const startTime = new Date(slot.start);
+      const hour = startTime.getHours();
+      const period = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      
+      return {
+        time: `${displayHour}:00 ${period}`,
+        available: true,
+        startTime: slot.start.toISOString(),
+        endTime: slot.end.toISOString()
+      };
+    });
 
-    // Business hours: 9 AM to 5 PM
-    const businessHours = {
-      start: 9,
-      end: 17
-    };
+    try {
+      // Get booked appointments from Supabase
+      const { data: bookedAppointments, error: dbError } = await supabase
+        .from('appointments')
+        .select('*')
+        .gte('appointment_date', startDate.toISOString())
+        .lte('appointment_date', endDate.toISOString());
 
-    // Generate time slots
-    const timeSlots = [];
-    const now = new Date();
-    const twoHoursFromNow = new Date(now.getTime() + (2 * 60 * 60 * 1000));
-
-    for (let hour = businessHours.start; hour < businessHours.end; hour++) {
-      const slotTime = new Date(startDate);
-      slotTime.setHours(hour, 0, 0, 0);
-      const slotEndTime = new Date(slotTime.getTime() + (2 * 60 * 60 * 1000));
-
-      // For today's date, only show slots that are at least 2 hours in the future
-      if (startDate.toDateString() === now.toDateString() && slotTime < twoHoursFromNow) {
-        continue;
+      if (dbError) {
+        // If there's a database error, log it but continue with available slots
+        console.error('Database error:', dbError);
+        // Return all slots as available if we can't check appointments
+        return NextResponse.json({ timeSlots });
       }
 
-      // Check if slot overlaps with any existing events
-      const hasOverlap = existingEvents.some(event => {
-        if (!event.start || !event.end) return false;
-        
-        const eventStart = new Date(event.start);
-        const eventEnd = new Date(event.end);
-        
-        // Check if the proposed slot overlaps with an existing event
-        return (
-          (slotTime <= eventEnd && slotEndTime >= eventStart) ||
-          (eventStart <= slotEndTime && eventEnd >= slotTime)
-        );
-      });
-
-      if (!hasOverlap) {
-        timeSlots.push({
-          time: slotTime.toLocaleTimeString('en-US', { 
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-          }),
-          available: true,
-          startTime: slotTime.toISOString(),
-          endTime: slotEndTime.toISOString()
-        });
-      }
-    }
-
-    // Get booked appointments from Supabase as well
-    const { data: bookedAppointments, error: dbError } = await supabase
-      .from('appointments')
-      .select('*')
-      .gte('appointment_date', startDate.toISOString())
-      .lte('appointment_date', endDate.toISOString());
-
-    if (!dbError && bookedAppointments) {
-      // Filter out slots that overlap with Supabase appointments
+      // Filter out slots that are already booked in Supabase
       const finalTimeSlots = timeSlots.filter(slot => {
-        const slotStart = new Date(slot.startTime);
-        const slotEnd = new Date(slot.endTime);
-        
-        return !bookedAppointments.some(appointment => {
+        return !bookedAppointments?.some(appointment => {
           const appointmentTime = new Date(appointment.appointment_date);
-          const appointmentEnd = new Date(appointmentTime.getTime() + (2 * 60 * 60 * 1000));
-          return (slotStart <= appointmentEnd && slotEnd >= appointmentTime);
+          const slotTime = new Date(slot.startTime);
+          return appointmentTime.getTime() === slotTime.getTime();
         });
       });
 
       return NextResponse.json({ timeSlots: finalTimeSlots });
+    } catch (dbError) {
+      // If there's any error with Supabase, return all slots as available
+      console.error('Database operation failed:', dbError);
+      return NextResponse.json({ timeSlots });
     }
-
-    return NextResponse.json({ timeSlots });
   } catch (error: unknown) {
     console.error('Calendar API error:', error);
     return NextResponse.json(
@@ -136,10 +104,11 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    console.log('Received request body:', body);
+    console.log('Received request body:', JSON.stringify(body, null, 2));
 
     const { 
       date,
+      time,
       service, 
       name, 
       email, 
@@ -150,42 +119,28 @@ export async function POST(request: Request) {
     } = body;
 
     // Validate required fields
-    if (!date || !service || !name || !email || !phone) {
-      console.error('Missing required fields:', { date, service, name, email, phone });
+    if (!date || !time || !service || !name || !email || !phone) {
+      console.error('Missing required fields:', { date, time, service, name, email, phone });
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Parse and validate the ISO timestamp
-    const appointmentDate = new Date(date);
-    if (isNaN(appointmentDate.getTime())) {
-      console.error('Invalid date format:', date);
-      return NextResponse.json(
-        { error: 'Invalid date format. Please provide an ISO 8601 timestamp.' },
-        { status: 400 }
-      );
-    }
-
-    console.log('Parsed appointment date:', appointmentDate);
-
-    // Format date and time for the calendar event
-    const dateStr = appointmentDate.toISOString().split('T')[0];
-    const timeStr = appointmentDate.toLocaleTimeString('en-US', {
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit'
+    console.log('Creating calendar event with:', {
+      date,
+      time,
+      timezone,
+      service,
+      name
     });
-
-    console.log('Formatted date and time:', { dateStr, timeStr });
 
     const calendarService = new CalendarService();
     
     try {
       const event = await calendarService.createCalendarEvent({
-        date: dateStr,
-        time: timeStr,
+        date,
+        time,
         service,
         name,
         email,
@@ -193,7 +148,7 @@ export async function POST(request: Request) {
         timezone
       });
 
-      console.log('Calendar event created:', event);
+      console.log('Calendar event created:', JSON.stringify(event, null, 2));
 
       // Save appointment to Supabase with simplified fields first
       const { data, error: dbError } = await supabase

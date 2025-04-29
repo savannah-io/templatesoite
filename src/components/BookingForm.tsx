@@ -69,13 +69,21 @@ export default function BookingForm() {
     }));
   };
 
+  const isWeekend = (date: Date): boolean => {
+    const day = date.getDay();
+    return day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
+  };
+
   const handleDateClick = (e: React.MouseEvent, date: Date) => {
     e.preventDefault();
     e.stopPropagation();
-    setFormData(prev => ({
-      ...prev,
-      appointmentDate: date
-    }));
+    // Only allow booking on weekdays
+    if (!isWeekend(date) && isDateAvailable(date)) {
+      setFormData(prev => ({
+        ...prev,
+        appointmentDate: date
+      }));
+    }
   };
 
   const handleTimeClick = (e: React.MouseEvent, time: string) => {
@@ -89,15 +97,15 @@ export default function BookingForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
 
     if (!formData.appointmentDate || !formData.appointmentTime || !formData.fullName || !formData.phoneNumber || 
         !formData.email || !formData.vehicleIssue) {
       setError('Please fill in all required fields');
+      setLoading(false);
       return;
     }
-
-    setLoading(true);
-    setError('');
 
     try {
       // Log the form data for debugging
@@ -108,19 +116,12 @@ export default function BookingForm() {
       
       console.log('Date and Time:', { appointmentDate, appointmentTime });
 
-      // Create the date object with the correct time
-      const [hours, minutes] = appointmentTime.split(':');
-      const date = new Date(appointmentDate);
-      date.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
-      
       // Ensure we're using the local timezone
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const isoTimestamp = date.toISOString();
-
-      console.log('Final ISO Timestamp:', isoTimestamp);
       
       const bookingData = {
-        date: isoTimestamp,
+        date: appointmentDate,
+        time: appointmentTime, // Send the original time string (e.g., "2:00 PM")
         service: formData.vehicleIssue,
         name: formData.fullName,
         email: formData.email,
@@ -172,18 +173,31 @@ export default function BookingForm() {
     });
   };
 
-  // Generate next 14 days, grouped into weeks starting with Sunday and ending with Saturday, but left-align the first week
+  // Generate next 14 days, grouped into weeks
   const generateCalendarWeeks = () => {
     const days = [];
     const today = new Date();
+    // Get next 14 days
     for (let i = 0; i < 14; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       days.push(date);
     }
-    // Group into weeks starting with Sunday
+    
+    // Group into weeks
     const weeks = [];
     let week = [];
+    
+    // Add days to complete the first week from Sunday
+    const firstDay = days[0];
+    const daysToAdd = firstDay.getDay();
+    for (let i = daysToAdd - 1; i >= 0; i--) {
+      const date = new Date(firstDay);
+      date.setDate(firstDay.getDate() - (i + 1));
+      week.push(date);
+    }
+    
+    // Add the rest of the days
     for (let i = 0; i < days.length; i++) {
       week.push(days[i]);
       if (week.length === 7) {
@@ -191,27 +205,20 @@ export default function BookingForm() {
         week = [];
       }
     }
-    // Pad the last week if needed (add nulls at the end)
+    
+    // Pad the last week if needed
     if (week.length > 0) {
-      while (week.length < 7) {
-        week.push(null);
+      const lastDay = week[week.length - 1];
+      const daysToAdd = 7 - week.length;
+      for (let i = 1; i <= daysToAdd; i++) {
+        const date = new Date(lastDay);
+        date.setDate(lastDay.getDate() + i);
+        week.push(date);
       }
       weeks.push(week);
     }
+    
     return weeks;
-  };
-
-  const timeSlots = [
-    '09:00', '10:00', '11:00', '12:00',
-    '13:00', '14:00', '15:00', '16:00'
-  ];
-
-  const formatDisplayTime = (time: string): string => {
-    const [hours] = time.split(':');
-    const hour = parseInt(hours, 10);
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour > 12 ? hour - 12 : hour;
-    return `${displayHour}:00 ${period}`;
   };
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -279,33 +286,23 @@ export default function BookingForm() {
   }, []);
 
   const isDateAvailable = (date: Date): boolean => {
-    // Sunday is not available
-    if (date.getDay() === 0) return false;
-
-    // Check if date is today
-    const today = new Date();
-    const isToday = date.toDateString() === today.toDateString();
-
-    if (isToday) {
-      // For today, check if we're within 2 hours of current time
-      const now = new Date();
-      const twoHoursFromNow = new Date(now.getTime() + (2 * 60 * 60 * 1000));
-      const dateStr = date.toISOString().split('T')[0];
-      const slotsForDate = availableSlots.find(slot => slot.date === dateStr);
-      
-      if (!slotsForDate) return false;
-
-      // Check if any slots are available after the 2-hour buffer
-      return slotsForDate.slots.some(slot => {
-        const slotTime = new Date(`${dateStr}T${slot.time}`);
-        return slot.available && slotTime > twoHoursFromNow;
-      });
-    }
-
-    // For future dates, check if there are any available slots
     const dateStr = date.toISOString().split('T')[0];
     const slotsForDate = availableSlots.find(slot => slot.date === dateStr);
     return slotsForDate?.slots.some(slot => slot.available) ?? false;
+  };
+
+  const formatDisplayTime = (time: string): string => {
+    // If the time already includes AM/PM, return it as is
+    if (time.includes('AM') || time.includes('PM')) {
+      return time;
+    }
+    
+    // Otherwise, format it
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours, 10);
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:00 ${period}`;
   };
 
   return (
@@ -417,33 +414,30 @@ export default function BookingForm() {
           {/* Calendar */}
           <div className="mb-8">
             <div className="grid gap-1">
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {weekDays.map((day, index) => (
-                  <div key={index} className="text-center text-sm text-gray-500">
-                    {day}
-                  </div>
-                ))}
-              </div>
               {generateCalendarWeeks().map((week, wIdx) => (
                 <div key={wIdx} className="grid grid-cols-7 gap-1">
-                  {week.map((date, dIdx) => (
-                    date ? (
+                  {week.map((date, dIdx) => {
+                    if (!date) return <div key={dIdx} className="p-2"></div>;
+                    
+                    const isAvailable = isDateAvailable(date);
+                    const isSelected = date.toDateString() === formData.appointmentDate?.toDateString();
+                    const isDisabled = isWeekend(date) || !isAvailable;
+
+                    return (
                       <button
                         type="button"
                         key={dIdx}
-                        onClick={(e) => {
-                          if (isDateAvailable(date)) handleDateClick(e, date);
-                        }}
-                        className={`p-2 rounded-lg border text-center transition-all duration-200 cursor-pointer ${
-                          date.toDateString() === formData.appointmentDate?.toDateString()
+                        onClick={(e) => handleDateClick(e, date)}
+                        className={`p-2 rounded-lg border text-center transition-all duration-200 cursor-pointer hover:border-primary-200 ${
+                          isSelected
                             ? 'border-primary-500 bg-primary-50 text-primary-700'
-                            : date.getDay() === 0
-                            ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
-                            : isDateAvailable(date)
-                            ? 'border-gray-200 hover:border-primary-200 hover:bg-gray-50'
-                            : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
+                            : 'border-gray-200 hover:bg-gray-50'
+                        } ${
+                          isDisabled
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-50 hover:border-gray-200 hover:bg-gray-100'
+                            : ''
                         }`}
-                        disabled={!isDateAvailable(date)}
+                        disabled={isDisabled}
                       >
                         <span className="text-xs text-gray-500 block">
                           {date.toLocaleDateString('en-US', { weekday: 'short' })}
@@ -452,10 +446,8 @@ export default function BookingForm() {
                           {date.getDate()}
                         </span>
                       </button>
-                    ) : (
-                      <div key={dIdx}></div>
-                    )
-                  ))}
+                    );
+                  })}
                 </div>
               ))}
             </div>
@@ -468,22 +460,29 @@ export default function BookingForm() {
               <div className="grid grid-cols-4 gap-2">
                 {formData.appointmentDate ? (() => {
                   const appointmentDate = formData.appointmentDate!.toISOString().split('T')[0];
-                  return (availableSlots.find(slot => slot.date === appointmentDate)?.slots || [])
+                  const slots = availableSlots.find(slot => slot.date === appointmentDate)?.slots || [];
+                  const sortedSlots = slots
                     .filter(slot => slot.available)
-                    .map((slot) => (
-                      <button
-                        type="button"
-                        key={slot.time}
-                        onClick={(e) => handleTimeClick(e, slot.time)}
-                        className={`p-2 rounded-lg border text-center transition-all duration-200 cursor-pointer hover:border-primary-200 ${
-                          formData.appointmentTime === slot.time
-                            ? 'border-primary-500 bg-primary-50 text-primary-700'
-                            : 'border-gray-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        <span className="text-sm font-medium">{formatDisplayTime(slot.time)}</span>
-                      </button>
-                    ))
+                    .sort((a, b) => {
+                      const timeA = a.time.split(':')[0];
+                      const timeB = b.time.split(':')[0];
+                      return parseInt(timeA) - parseInt(timeB);
+                    });
+
+                  return sortedSlots.map((slot) => (
+                    <button
+                      type="button"
+                      key={slot.time}
+                      onClick={(e) => handleTimeClick(e, slot.time)}
+                      className={`p-2 rounded-lg border text-center transition-all duration-200 cursor-pointer hover:border-primary-200 ${
+                        formData.appointmentTime === slot.time
+                          ? 'border-primary-500 bg-primary-50 text-primary-700'
+                          : 'border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="text-sm font-medium">{formatDisplayTime(slot.time)}</span>
+                    </button>
+                  ));
                 })() : null}
               </div>
             </div>
