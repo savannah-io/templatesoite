@@ -69,7 +69,7 @@ export default function Footer() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-2xl font-montserrat font-bold bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 bg-clip-text text-transparent mb-4 hover:scale-105 transition-transform duration-300"
+              className="text-2xl font-montserrat font-bold bg-gradient-to-r from-sky-500 to-primary-700 bg-clip-text text-transparent mb-4 hover:scale-105 transition-transform duration-300"
             >
               Taylor&apos;s Collision
             </motion.h2>
@@ -139,11 +139,11 @@ export default function Footer() {
             </motion.h3>
             <ul className="space-y-3">
               {[
-                'Schedule Now',
-                'Services',
-                'About Us',
-                'Contact'
-              ].map((item, index) => (
+                ['Schedule Now', '/#schedule'],
+                ['Services', '/services'],
+                ['About Us', '/about'],
+                ['Contact', '/contact']
+              ].map(([item, path], index) => (
                 <motion.li 
                   key={item}
                   initial={{ opacity: 0, x: -20 }}
@@ -152,7 +152,7 @@ export default function Footer() {
                   transition={{ delay: index * 0.1 }}
                   className="transform hover:-translate-y-0.5 transition-transform duration-200"
                 >
-                  <ShimmerLink href={`/${item.toLowerCase().replace(' ', '-')}`}>
+                  <ShimmerLink href={path}>
                     {item}
                   </ShimmerLink>
                 </motion.li>

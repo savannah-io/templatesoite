@@ -567,7 +567,11 @@ function ServicesContent() {
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
                   <a
-                    href="/schedule-now"
+                    href="/"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.location.href = '/#schedule';
+                    }}
                     className="inline-flex items-center justify-center px-8 py-3 bg-white hover:bg-gray-100 text-primary-600 font-semibold rounded-lg transition-colors duration-200"
                   >
                     Schedule Now

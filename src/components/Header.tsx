@@ -87,10 +87,10 @@ const Header = () => {
         <div className="container mx-auto px-4">
           <nav className="h-14 flex items-center justify-between py-3">
             <Link href="/" className="relative group">
-              <span className="text-2xl font-montserrat font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent transition-all duration-300 group-hover:from-primary-700 group-hover:to-primary-900">
+              <span className="text-3xl font-montserrat font-bold bg-gradient-to-r from-sky-500 to-primary-700 bg-clip-text text-transparent transition-all duration-300 group-hover:from-sky-400 group-hover:to-primary-600">
                 Taylor&apos;s Collision
               </span>
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary-600 transition-all duration-300 group-hover:w-full"></span>
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-sky-500 transition-all duration-300 group-hover:w-full"></span>
             </Link>
             
             <div className="hidden md:flex items-center gap-10">
@@ -100,7 +100,7 @@ const Header = () => {
                   href={item === 'Home' ? '/' : `/${item.toLowerCase()}`}
                   className="relative group text-gray-700 transition-colors duration-300"
                 >
-                  <span className={`relative font-medium tracking-wide inline-block py-2 ${isActivePath(item) ? 'text-blue-500' : 'group-hover:text-primary-600'}`}>
+                  <span className={`relative font-medium tracking-wide inline-block py-2.5 text-base ${isActivePath(item) ? 'text-blue-500' : 'group-hover:text-primary-600'}`}>
                     {item}
                     <span className={`absolute left-0 bottom-0 w-full h-0.5 bg-blue-500 transform origin-left ${isActivePath(item) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'} transition-transform duration-300 ease-out`}></span>
                     <span className={`absolute left-0 -bottom-px w-full h-[2px] bg-blue-500/20 transform origin-left ${isActivePath(item) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'} transition-transform duration-300 ease-out delay-75`}></span>
@@ -114,8 +114,18 @@ const Header = () => {
               whileTap={{ scale: 0.95 }}
             >
               <Link 
-                href="/schedule-now" 
+                href="/" 
                 className="inline-flex items-center justify-center bg-primary-600 text-white h-11 px-6 rounded-md font-medium shadow-lg hover:bg-primary-700 transition-all duration-300 hover:shadow-xl whitespace-nowrap"
+                onClick={(e) => {
+                  e.preventDefault();
+                  // If we're already on the home page, just scroll to the section
+                  if (window.location.pathname === '/') {
+                    document.getElementById('schedule')?.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    // If we're on a different page, navigate to home page with schedule section
+                    window.location.href = '/#schedule';
+                  }
+                }}
               >
                 Schedule Now
               </Link>
