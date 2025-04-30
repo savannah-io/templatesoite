@@ -45,11 +45,18 @@ export default function BookingForm() {
   const [availableSlots, setAvailableSlots] = useState<DateSlots[]>([]);
   const [datesLoading, setDatesLoading] = useState(false);
 
+  // Add new state for tracking polling
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+
   // Function to fetch available slots for a specific date
   const fetchSlotsForDate = async (date: Date) => {
     try {
-      const dateStr = date.toISOString().split('T')[0];
-      const res = await fetch(`/api/calendar?date=${dateStr}`);
+      // Format date in local timezone
+      const dateStr = new Date(date).toLocaleDateString('en-CA');
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      console.log('Fetching slots for date:', { dateStr, timezone });
+      
+      const res = await fetch(`/api/calendar?date=${dateStr}&timezone=${timezone}`);
       
       if (!res.ok) {
         const errorData = await res.json();
@@ -65,6 +72,7 @@ export default function BookingForm() {
       }
 
       const data = await res.json();
+      console.log(`Received data for ${dateStr}:`, data);
       
       if (!data.timeSlots || !Array.isArray(data.timeSlots)) {
         console.error(`Invalid slots data for ${dateStr}:`, data);
@@ -84,10 +92,29 @@ export default function BookingForm() {
     } catch (error) {
       console.error(`Error fetching slots for date ${date}:`, error);
       return { 
-        date: date.toISOString().split('T')[0], 
+        date: new Date(date).toLocaleDateString('en-CA'), 
         slots: [] 
       };
     }
+  };
+
+  // Function to start polling for availability updates
+  const startPolling = (date: Date) => {
+    // Clear any existing polling interval
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+    }
+
+    // Set up new polling interval (every 30 seconds)
+    const interval = setInterval(async () => {
+      const updatedSlots = await fetchSlotsForDate(date);
+      setAvailableSlots(prev => {
+        const otherDates = prev.filter(slot => slot.date !== updatedSlots.date);
+        return [...otherDates, updatedSlots];
+      });
+    }, 30000); // 30 seconds
+
+    setPollingInterval(interval);
   };
 
   // Function to fetch slots for the next 14 days
@@ -98,7 +125,11 @@ export default function BookingForm() {
         .flat()
         .filter((date): date is Date => date !== null);
       
+      console.log('Fetching slots for days:', days.map(d => d.toISOString().split('T')[0]));
+      
       const slots = await Promise.all(days.map(fetchSlotsForDate));
+      console.log('Received slots:', slots);
+      
       setAvailableSlots(slots);
     } catch (error) {
       console.error('Error fetching initial slots:', error);
@@ -134,6 +165,7 @@ export default function BookingForm() {
     return day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
   };
 
+  // Update handleDateClick to start polling when a date is selected
   const handleDateClick = async (e: React.MouseEvent, date: Date) => {
     e.preventDefault();
     e.stopPropagation();
@@ -152,6 +184,9 @@ export default function BookingForm() {
         const otherDates = prev.filter(slot => slot.date !== slotsForDate.date);
         return [...otherDates, slotsForDate];
       });
+
+      // Start polling for this date
+      startPolling(date);
     }
   };
 
@@ -305,10 +340,56 @@ export default function BookingForm() {
     fetchInitialSlots();
   }, []);
 
+  // Clean up polling interval when component unmounts or date changes
+  useEffect(() => {
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [pollingInterval]);
+
   const isDateAvailable = (date: Date): boolean => {
-    const dateStr = date.toISOString().split('T')[0];
+    // Format date in local timezone for consistent comparison
+    const dateStr = date.toLocaleDateString('en-CA');
+    
+    // Add debug logging
+    console.log('Checking availability for:', {
+      dateStr,
+      isPastDate: date < new Date(new Date().setHours(0, 0, 0, 0)),
+      isWeekend: date.getDay() === 0 || date.getDay() === 6,
+      availableDates: availableSlots.map(slot => slot.date),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    });
+
+    // Don't allow past dates
+    if (date < new Date(new Date().setHours(0, 0, 0, 0))) {
+      return false;
+    }
+    
+    // Don't allow weekends
+    if (date.getDay() === 0 || date.getDay() === 6) {
+      return false;
+    }
+
     const slotsForDate = availableSlots.find(slot => slot.date === dateStr);
-    return slotsForDate?.slots.some(slot => slot.available) ?? false;
+    
+    // If we don't have slot data yet for this date, show it as available
+    if (!slotsForDate) {
+      console.log('No slots found for date:', dateStr);
+      return true;
+    }
+    
+    // Add more debug logging
+    console.log('Slots found for date:', {
+      dateStr,
+      slotsForDate,
+      hasAvailableSlots: slotsForDate.slots.some(slot => slot.available),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    });
+    
+    // Check if there are any available slots for this date
+    return slotsForDate.slots.some(slot => slot.available);
   };
 
   const formatDisplayTime = (time: string): string => {
@@ -478,9 +559,18 @@ export default function BookingForm() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Select Time</label>
               <div className="grid grid-cols-4 gap-2">
-                {formData.appointmentDate ? (() => {
-                  const appointmentDate = formData.appointmentDate!.toISOString().split('T')[0];
-                  const slots = availableSlots.find(slot => slot.date === appointmentDate)?.slots || [];
+                {(() => {
+                  // Format date in local timezone
+                  const selectedDate = new Date(formData.appointmentDate!).toLocaleDateString('en-CA');
+                  console.log('Looking for slots for date:', {
+                    selectedDate,
+                    availableSlots: availableSlots.map(slot => ({
+                      date: slot.date,
+                      slotsCount: slot.slots.length
+                    }))
+                  });
+                  
+                  const slots = availableSlots.find(slot => slot.date === selectedDate)?.slots || [];
                   const sortedSlots = slots
                     .filter(slot => slot.available)
                     .sort((a, b) => {
@@ -505,6 +595,13 @@ export default function BookingForm() {
                       return hourA - hourB;
                     });
 
+                  console.log('Found slots:', {
+                    date: selectedDate,
+                    totalSlots: slots.length,
+                    availableSlots: sortedSlots.length,
+                    slots: sortedSlots.map(s => s.time)
+                  });
+
                   return sortedSlots.length > 0 ? (
                     sortedSlots.map(slot => (
                       <button
@@ -525,7 +622,7 @@ export default function BookingForm() {
                       No available times for this date
                     </div>
                   );
-                })() : null}
+                })()}
               </div>
             </div>
           )}

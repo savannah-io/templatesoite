@@ -51,14 +51,26 @@ export default function ScheduleNow() {
   const fetchTimeSlots = async (date: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/calendar?date=${date}`);
+      setError('');
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const response = await fetch(`/api/calendar?date=${date}&timezone=${timezone}`);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch time slots');
       }
+      
       const data = await response.json();
+      console.log('Fetched time slots:', {
+        date,
+        timezone,
+        slotsCount: data.timeSlots.length,
+        hasSlots: data.timeSlots.length > 0
+      });
+      
       setAvailableTimeSlots(data.timeSlots);
     } catch (error) {
       console.error('Error fetching time slots:', error);
+      setError('Failed to fetch available times. Please try again.');
       setAvailableTimeSlots([]);
     } finally {
       setLoading(false);
@@ -67,8 +79,15 @@ export default function ScheduleNow() {
 
   const handleDateSelection = (date: Date | null) => {
     setSelectedDate(date);
+    setSelectedTime('');
+    
     if (date) {
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = date.toLocaleDateString('en-CA');
+      console.log('Selected date:', {
+        date: dateStr,
+        dayOfWeek: date.getDay(),
+        isWeekend: date.getDay() === 0 || date.getDay() === 6
+      });
       fetchTimeSlots(dateStr);
     }
   };
