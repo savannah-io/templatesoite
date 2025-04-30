@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 // Default timezone - should match your business location
@@ -16,8 +16,6 @@ export async function GET(request: Request) {
     const date = searchParams.get('date');
     const timezone = searchParams.get('timezone') || DEFAULT_TIMEZONE;
 
-    console.log('Calendar API Request:', { date, timezone });
-
     if (!date) {
       return NextResponse.json(
         { error: 'Date parameter is required' },
@@ -25,21 +23,12 @@ export async function GET(request: Request) {
       );
     }
 
-    // Create start and end date for the requested date in the correct timezone
+    // Create start and end date for the requested date
     const startDate = new Date(date);
-    const endDate = new Date(date);
-    
-    // Ensure we're working with the full day in the requested timezone
     startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = new Date(date);
     endDate.setHours(23, 59, 59, 999);
-
-    console.log('Processing request:', {
-      requestedDate: date,
-      timezone,
-      startDate: startDate.toLocaleString('en-US', { timeZone: timezone }),
-      endDate: endDate.toLocaleString('en-US', { timeZone: timezone }),
-      dayOfWeek: startDate.getDay()
-    });
 
     // Validate the date
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
@@ -52,24 +41,22 @@ export async function GET(request: Request) {
     const calendarService = new CalendarService();
     const availableSlots = await calendarService.getAvailableSlots(
       startDate,
-      endDate,
-      timezone
+      endDate
     );
 
     // Convert slots to the format expected by the frontend
-    const timeSlots = availableSlots.map(slot => ({
-      time: slot.time,
-      available: slot.available,
-      startTime: slot.start.toISOString(),
-      endTime: slot.end.toISOString()
-    }));
-
-    console.log('Processed slots:', {
-      date,
-      timezone,
-      slotsCount: timeSlots.length,
-      hasSlots: timeSlots.length > 0,
-      dayOfWeek: startDate.getDay()
+    const timeSlots = availableSlots.map(slot => {
+      const startTime = new Date(slot.start);
+      const hour = startTime.getHours();
+      const period = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      
+      return {
+        time: `${displayHour}:00 ${period}`,
+        available: true,
+        startTime: slot.start.toISOString(),
+        endTime: slot.end.toISOString()
+      };
     });
 
     try {
@@ -77,37 +64,28 @@ export async function GET(request: Request) {
       const { data: bookedAppointments, error: dbError } = await supabase
         .from('appointments')
         .select('*')
-        .eq('appointment_date', date);
+        .gte('appointment_date', startDate.toISOString())
+        .lte('appointment_date', endDate.toISOString());
 
       if (dbError) {
+        // If there's a database error, log it but continue with available slots
         console.error('Database error:', dbError);
+        // Return all slots as available if we can't check appointments
         return NextResponse.json({ timeSlots });
       }
 
       // Filter out slots that are already booked in Supabase
       const finalTimeSlots = timeSlots.filter(slot => {
-        const slotTime = new Date(slot.startTime);
-        
-        // Check if slot is already marked as unavailable from Google Calendar
-        if (!slot.available) return false;
-        
-        // Check against Supabase bookings
         return !bookedAppointments?.some(appointment => {
           const appointmentTime = new Date(appointment.appointment_date);
+          const slotTime = new Date(slot.startTime);
           return appointmentTime.getTime() === slotTime.getTime();
         });
       });
 
-      console.log('Final slots:', {
-        date,
-        timezone,
-        originalCount: timeSlots.length,
-        finalCount: finalTimeSlots.length,
-        dayOfWeek: startDate.getDay()
-      });
-
       return NextResponse.json({ timeSlots: finalTimeSlots });
     } catch (dbError) {
+      // If there's any error with Supabase, return all slots as available
       console.error('Database operation failed:', dbError);
       return NextResponse.json({ timeSlots });
     }

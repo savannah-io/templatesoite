@@ -127,41 +127,21 @@ Notes: ${details.notes || 'None'}
     }
   }
 
-  async getAvailableSlots(startDate: Date, endDate: Date, timezone?: string) {
+  async getAvailableSlots(startDate: Date, endDate: Date) {
     try {
       const calendar = this.checkCalendarInitialized();
-      
-      // Ensure we're using the correct calendar ID
-      const calendarId = process.env.GOOGLE_CALENDAR_ID;
-      console.log('Using Calendar ID:', calendarId);
-      
-      // Use provided timezone or default
-      const timeZone = timezone || this.calendarTimezone;
-      
-      // Create dates in the correct timezone
-      const timeMin = new Date(startDate.toLocaleString('en-US', { timeZone }));
-      const timeMax = new Date(endDate.toLocaleString('en-US', { timeZone }));
-      
-      // Ensure we're requesting the full day
-      timeMin.setHours(0, 0, 0, 0);
-      timeMax.setHours(23, 59, 59, 999);
-      
-      console.log('Calendar API Request:', {
-        date: startDate.toLocaleDateString('en-CA'),
-        timeZone,
-        timeMin: timeMin.toISOString(),
-        timeMax: timeMax.toISOString(),
-        dayOfWeek: timeMin.getDay()
-      });
+      console.log('Fetching slots from', startDate.toISOString(), 'to', endDate.toISOString());
       
       const response = await calendar.events.list({
-        calendarId,
-        timeMin: timeMin.toISOString(),
-        timeMax: timeMax.toISOString(),
+        calendarId: process.env.GOOGLE_CALENDAR_ID,
+        timeMin: startDate.toISOString(),
+        timeMax: endDate.toISOString(),
         singleEvents: true,
         orderBy: 'startTime',
-        timeZone
+        timeZone: this.calendarTimezone,
       });
+
+      console.log('Found existing events:', response.data.items?.length || 0);
 
       // Define business hours: 9 AM to 5 PM
       const businessHours = [
@@ -178,24 +158,19 @@ Notes: ${details.notes || 'None'}
 
       // Generate available slots
       const availableSlots = this.generateAvailableSlots(
-        timeMin,
-        timeMax,
+        startDate,
+        endDate,
         businessHours,
-        response.data.items || [],
-        timeZone
+        response.data.items || []
       );
 
-      console.log('Generated Slots:', {
-        date: startDate.toLocaleDateString('en-CA'),
-        timeZone,
-        slotsCount: availableSlots.length,
-        dayOfWeek: timeMin.getDay(),
-        hasSlots: availableSlots.length > 0
-      });
-
+      console.log('Generated available slots:', availableSlots.length);
       return availableSlots;
     } catch (error: unknown) {
       console.error('Error fetching calendar slots:', error);
+      if ((error as any).response?.data?.error) {
+        console.error('Google Calendar API error:', (error as any).response.data.error);
+      }
       throw error;
     }
   }
@@ -204,83 +179,38 @@ Notes: ${details.notes || 'None'}
     startDate: Date,
     endDate: Date,
     businessHours: Array<{ hour: number, period: string }>,
-    existingEvents: calendar_v3.Schema$Event[],
-    timeZone: string
+    existingEvents: calendar_v3.Schema$Event[]
   ) {
     const slots = [];
-    // Create a new date object in the local timezone
-    const currentDate = new Date(startDate.toLocaleString('en-US', { timeZone }));
-    currentDate.setHours(0, 0, 0, 0);  // Ensure we start at beginning of day
-    
-    // Log the date we're processing
-    console.log('Processing slots for date:', {
-      inputStartDate: startDate.toISOString(),
-      localCurrentDate: currentDate.toISOString(),
-      timezone: timeZone,
-      startDay: currentDate.getDay(),
-      endDay: endDate.getDay()
-    });
+    const currentDate = new Date(startDate);
 
-    // Convert existing events to the calendar timezone for comparison
-    const bookedSlots = existingEvents
-      .filter(event => event.start?.dateTime && event.end?.dateTime)
-      .map(event => {
-        // Convert the event times to the calendar timezone
-        const start = new Date(new Date(event.start!.dateTime!).toLocaleString('en-US', { timeZone }));
-        const end = new Date(new Date(event.end!.dateTime!).toLocaleString('en-US', { timeZone }));
-        
-        console.log('Booked slot:', {
-          originalStart: event.start!.dateTime,
-          originalEnd: event.end!.dateTime,
-          convertedStart: start.toISOString(),
-          convertedEnd: end.toISOString(),
-          timezone: timeZone,
-          dayOfWeek: start.getDay()
-        });
-        
-        return { start, end };
-      });
+    // Convert existing events to local timezone for comparison
+    const bookedSlots = existingEvents.map(event => {
+      if (!event.start?.dateTime || !event.end?.dateTime) return null;
+      return {
+        start: new Date(event.start.dateTime),
+        end: new Date(event.end.dateTime)
+      };
+    }).filter(Boolean);
+
+    console.log('Booked slots:', JSON.stringify(bookedSlots, null, 2));
 
     while (currentDate <= endDate) {
-      const dayOfWeek = currentDate.getDay();
-      
-      // Only skip weekends (0 = Sunday, 6 = Saturday)
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        console.log('Processing weekday:', {
-          date: currentDate.toLocaleDateString('en-CA'),
-          dayOfWeek,
-          dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek]
-        });
-        
+      if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) { // Skip weekends
         for (const time of businessHours) {
-          // Create date in the correct timezone
-          const slotDate = new Date(currentDate.toLocaleString('en-US', { timeZone }));
+          const slotStart = new Date(currentDate);
           let hour24 = time.period === 'PM' && time.hour !== 12 ? time.hour + 12 : time.hour;
           if (time.period === 'AM' && time.hour === 12) hour24 = 0;
           
-          slotDate.setHours(hour24, 0, 0, 0);
-          
-          // Create slot times in the calendar timezone
-          const slotStart = new Date(slotDate.toLocaleString('en-US', { timeZone }));
+          slotStart.setHours(hour24, 0, 0, 0);
           const slotEnd = new Date(slotStart.getTime() + (60 * 60 * 1000)); // 1 hour slots
 
-          // Skip slots from past days only
-          const now = new Date();
-          const isToday = slotStart.toDateString() === now.toDateString();
-          const isPastDay = slotStart < new Date(now.setHours(0, 0, 0, 0));
-          
-          if (isPastDay || (isToday && slotStart < now)) {
-            console.log('Skipping past slot:', {
-              date: slotStart.toLocaleDateString('en-CA'),
-              time: `${time.hour}:00 ${time.period}`,
-              isPastDay,
-              isToday
-            });
-            continue;
-          }
+          console.log(`Checking availability for slot: ${slotStart.toISOString()} - ${slotEnd.toISOString()}`);
 
           // Check if slot overlaps with any booked slots
           const isBooked = bookedSlots.some(bookedSlot => {
+            if (!bookedSlot) return false;
+            
             const overlap = (
               (slotStart >= bookedSlot.start && slotStart < bookedSlot.end) ||
               (slotEnd > bookedSlot.start && slotEnd <= bookedSlot.end) ||
@@ -288,55 +218,26 @@ Notes: ${details.notes || 'None'}
             );
 
             if (overlap) {
-              console.log('Found booking overlap:', {
-                slot: `${time.hour}:00 ${time.period}`,
-                date: currentDate.toLocaleDateString('en-CA'),
-                dayOfWeek,
-                slotRange: `${slotStart.toISOString()} - ${slotEnd.toISOString()}`,
-                bookingRange: `${bookedSlot.start.toISOString()} - ${bookedSlot.end.toISOString()}`,
-                timezone: timeZone
-              });
+              console.log(`Slot overlaps with booked appointment: ${bookedSlot.start} - ${bookedSlot.end}`);
             }
 
             return overlap;
           });
 
-          slots.push({
-            start: slotStart,
-            end: slotEnd,
-            time: `${time.hour}:00 ${time.period}`,
-            available: !isBooked
-          });
+          if (!isBooked) {
+            console.log(`Adding available slot: ${time.hour}:00 ${time.period}`);
+            slots.push({
+              start: slotStart,
+              end: slotEnd,
+              time: `${time.hour}:00 ${time.period}`,
+              available: true
+            });
+          }
         }
-      } else {
-        console.log('Skipping weekend:', {
-          date: currentDate.toLocaleDateString('en-CA'),
-          dayOfWeek,
-          dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek]
-        });
       }
-      
       currentDate.setDate(currentDate.getDate() + 1);
       currentDate.setHours(0, 0, 0, 0);
     }
-
-    // Log the generated slots for debugging
-    console.log('Generated slots:', {
-      startDate: startDate.toLocaleDateString('en-CA'),
-      endDate: endDate.toLocaleDateString('en-CA'),
-      timezone: timeZone,
-      slotsCount: slots.length,
-      slotsPerDay: slots.reduce((acc, slot) => {
-        const date = new Date(slot.start).toLocaleDateString('en-CA');
-        const day = new Date(slot.start).getDay();
-        acc[date] = acc[date] || { count: 0, day };
-        acc[date].count++;
-        return acc;
-      }, {} as Record<string, { count: number, day: number }>),
-      firstSlot: slots[0],
-      lastSlot: slots[slots.length - 1],
-      bookedSlotsCount: bookedSlots.length
-    });
 
     return slots;
   }
@@ -375,7 +276,6 @@ Notes: ${details.notes || 'None'}
       const startDate = new Date(startDateTime);
       const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hour later
 
-      // Double-check availability right before creating the event
       const response = await calendar.events.list({
         calendarId: process.env.GOOGLE_CALENDAR_ID,
         timeMin: startDate.toISOString(),
