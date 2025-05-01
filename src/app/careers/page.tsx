@@ -9,15 +9,40 @@ import MouseFollowGradient from '@/components/MouseFollowGradient'
 import { supabase } from '@/lib/supabase'
 import { formatPhoneNumber, validateEmail, validatePhone } from '@/utils/formatters'
 
+interface Reference {
+  name: string;
+  relationship: string;
+  phone: string;
+  email: string;
+}
+
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  experience: string;
+  position: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  references: Reference[];
+}
+
 export default function CareersPage() {
   const router = useRouter()
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
     experience: '',
     position: '',
+    address: '',
+    city: '',
+    state: '',
+    zip: '',
     references: [{
       name: '',
       relationship: '',
