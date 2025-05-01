@@ -145,7 +145,13 @@ export default function ReviewsPage() {
               {totalPages > 1 && (
                 <div className="flex justify-center mb-16 gap-2">
                   <button
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    onClick={() => {
+                      setPage(p => Math.max(1, p - 1));
+                      // Scroll to top on mobile only
+                      if (window.innerWidth < 768) {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
                     disabled={page === 1}
                     className="px-4 py-2 rounded bg-primary-600 text-white disabled:opacity-50"
                   >
@@ -155,7 +161,13 @@ export default function ReviewsPage() {
                     Page {page} of {totalPages}
                   </span>
                   <button
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    onClick={() => {
+                      setPage(p => Math.min(totalPages, p + 1));
+                      // Scroll to top on mobile only
+                      if (window.innerWidth < 768) {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
                     disabled={page === totalPages}
                     className="px-4 py-2 rounded bg-primary-600 text-white disabled:opacity-50"
                   >

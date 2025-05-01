@@ -107,46 +107,26 @@ export default function CareersPage() {
       }
 
       // Save application data to Supabase
-      const { data: applicationData, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('job_applications')
         .insert({
           first_name: formData.firstName,
           last_name: formData.lastName,
           email: formData.email,
           phone: formData.phone,
-          years_experience: parseInt(formData.experience),
+          address: formData.address || '',  // Add default values for required fields
+          city: formData.city || '',
+          state: formData.state || '',
+          zip: formData.zip || '',
           position: formData.position,
-          ...(resumeUrl && { resume_url: resumeUrl }),
-          status: 'new'
+          start_date: new Date().toISOString().split('T')[0],  // Current date as default
+          experience: formData.experience,
+          resume_url: resumeUrl || null
         })
-        .select()
-        .single()
 
       if (insertError) {
         console.error('Application insert error:', insertError)
         throw insertError
-      }
-
-      if (!applicationData?.id) {
-        throw new Error('No application ID returned')
-      }
-
-      // Save references
-      const { error: referencesError } = await supabase
-        .from('job_references')
-        .insert(
-          formData.references.map(ref => ({
-            application_id: applicationData.id,
-            name: ref.name,
-            relationship: ref.relationship,
-            phone: ref.phone,
-            email: ref.email
-          }))
-        )
-
-      if (referencesError) {
-        console.error('References insert error:', referencesError)
-        throw referencesError
       }
 
       // Redirect to success page

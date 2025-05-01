@@ -1,7 +1,7 @@
 'use client'
 
-import React from 'react'
-import { motion } from 'framer-motion'
+import React, { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { 
   WrenchScrewdriverIcon, 
   SparklesIcon, 
@@ -81,6 +81,35 @@ const services = [
 ]
 
 export default function ServiceReel() {
+  const [currentChunk, setCurrentChunk] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if we're on mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Handle mobile chunk rotation
+  useEffect(() => {
+    if (!isMobile) return;
+    
+    const interval = setInterval(() => {
+      setCurrentChunk((prev) => (prev + 1) % services.length); // Rotate through all services
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isMobile]);
+
+  // Split services into chunks of 3 for mobile
+  const mobileChunks = Array.from({ length: Math.ceil(services.length / 3) }, (_, i) =>
+    services.slice(i * 3, (i * 3) + 3)
+  );
+
   return (
     <div className="relative overflow-hidden">
       {/* Decorative elements */}
@@ -91,69 +120,117 @@ export default function ServiceReel() {
 
       <div className="relative max-w-[120rem] mx-auto">
         {/* Left gradient */}
-        <div className="absolute left-0 top-0 bottom-0 w-[35rem] z-10">
+        <div className="hidden md:block absolute left-0 top-0 bottom-0 w-[35rem] z-10">
           <div className="absolute inset-0 bg-gradient-to-r from-white via-white to-transparent"></div>
           <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent translate-x-[20%]"></div>
         </div>
         
         {/* Right gradient */}
-        <div className="absolute right-0 top-0 bottom-0 w-[35rem] z-10">
+        <div className="hidden md:block absolute right-0 top-0 bottom-0 w-[35rem] z-10">
           <div className="absolute inset-0 bg-gradient-to-l from-white via-white to-transparent"></div>
           <div className="absolute inset-0 bg-gradient-to-l from-white via-white/80 to-transparent translate-x-[-20%]"></div>
         </div>
         
-        <div className="overflow-hidden mx-[18rem]">
-          <motion.div 
-            className="flex gap-8 animate-scroll"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            {/* First set of cards */}
-            <div className="flex gap-8 shrink-0">
-              {services.map((service, index) => (
+        <div className="overflow-hidden md:mx-[18rem] px-4 md:px-0">
+          {/* Mobile View */}
+          <div className="md:hidden w-full">
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key={currentChunk}
+                className="flex justify-center"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.5 }}
+              >
                 <motion.div
+                  key={currentChunk}
+                  className="w-[280px] aspect-square bg-white backdrop-blur-sm p-4 rounded-2xl hover:shadow-md transition-all duration-300 border border-gray-100/80 group shrink-0 flex flex-col items-center text-center justify-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="text-primary-500 mb-4 transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 flex justify-center">
+                    {React.cloneElement(services[currentChunk].icon, { className: "w-12 h-12" })}
+                  </div>
+                  <h3 className="font-display font-bold mb-2 text-lg text-primary-600 group-hover:text-primary-700 transition-colors duration-300">
+                    {services[currentChunk].title}
+                  </h3>
+                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-300 max-w-[85%]">
+                    {services[currentChunk].description}
+                  </p>
+                </motion.div>
+              </motion.div>
+            </AnimatePresence>
+            {/* Mobile Progress Indicators */}
+            <div className="flex justify-center gap-1.5 mt-6 flex-wrap px-4">
+              {services.map((_, index) => (
+                <div
                   key={index}
-                  className="w-[18rem] aspect-square bg-white backdrop-blur-sm p-7 rounded-3xl hover:shadow-md transition-all duration-300 border border-gray-100/80 group shrink-0 flex flex-col items-center text-center justify-center"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <div className="text-primary-500 mb-6 transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 flex justify-center">
-                    {React.cloneElement(service.icon, { className: "w-16 h-16" })}
-                  </div>
-                  <h3 className="font-display font-bold mb-4 text-xl text-primary-600 group-hover:text-primary-700 transition-colors duration-300">
-                    {service.title}
-                  </h3>
-                  <p className="text-base text-gray-600 group-hover:text-gray-700 transition-colors duration-300 max-w-[85%]">
-                    {service.description}
-                  </p>
-                </motion.div>
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    index === currentChunk 
+                      ? 'w-6 bg-primary-500' 
+                      : 'w-1.5 bg-gray-300'
+                  }`}
+                />
               ))}
             </div>
-            {/* Second set of cards (duplicate for seamless loop) */}
-            <div className="flex gap-8 shrink-0">
-              {services.map((service, index) => (
-                <motion.div
-                  key={`duplicate-${index}`}
-                  className="w-[18rem] aspect-square bg-white backdrop-blur-sm p-7 rounded-3xl hover:shadow-md transition-all duration-300 border border-gray-100/80 group shrink-0 flex flex-col items-center text-center justify-center"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <div className="text-primary-500 mb-6 transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 flex justify-center">
-                    {React.cloneElement(service.icon, { className: "w-16 h-16" })}
-                  </div>
-                  <h3 className="font-display font-bold mb-4 text-xl text-primary-600 group-hover:text-primary-700 transition-colors duration-300">
-                    {service.title}
-                  </h3>
-                  <p className="text-base text-gray-600 group-hover:text-gray-700 transition-colors duration-300 max-w-[85%]">
-                    {service.description}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+          </div>
+
+          {/* Desktop View */}
+          <div className="hidden md:block">
+            <motion.div 
+              className="flex gap-8 animate-scroll"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              {/* First set of cards */}
+              <div className="flex gap-8 shrink-0">
+                {services.map((service, index) => (
+                  <motion.div
+                    key={index}
+                    className="w-[18rem] aspect-square bg-white backdrop-blur-sm p-7 rounded-3xl hover:shadow-md transition-all duration-300 border border-gray-100/80 group shrink-0 flex flex-col items-center text-center justify-center"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <div className="text-primary-500 mb-6 transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 flex justify-center">
+                      {React.cloneElement(service.icon, { className: "w-16 h-16" })}
+                    </div>
+                    <h3 className="font-display font-bold mb-4 text-xl text-primary-600 group-hover:text-primary-700 transition-colors duration-300">
+                      {service.title}
+                    </h3>
+                    <p className="text-base text-gray-600 group-hover:text-gray-700 transition-colors duration-300 max-w-[85%]">
+                      {service.description}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+              {/* Second set of cards (duplicate for seamless loop) */}
+              <div className="flex gap-8 shrink-0">
+                {services.map((service, index) => (
+                  <motion.div
+                    key={`duplicate-${index}`}
+                    className="w-[18rem] aspect-square bg-white backdrop-blur-sm p-7 rounded-3xl hover:shadow-md transition-all duration-300 border border-gray-100/80 group shrink-0 flex flex-col items-center text-center justify-center"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <div className="text-primary-500 mb-6 transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 flex justify-center">
+                      {React.cloneElement(service.icon, { className: "w-16 h-16" })}
+                    </div>
+                    <h3 className="font-display font-bold mb-4 text-xl text-primary-600 group-hover:text-primary-700 transition-colors duration-300">
+                      {service.title}
+                    </h3>
+                    <p className="text-base text-gray-600 group-hover:text-gray-700 transition-colors duration-300 max-w-[85%]">
+                      {service.description}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
         </div>
       </div>
 

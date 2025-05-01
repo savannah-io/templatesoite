@@ -35,7 +35,17 @@
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    @apply relative overflow-hidden;
+    margin-top: -64px;
+    @apply relative overflow-hidden pt-[64px] pb-20;
+  }
+
+  @media (min-width: 768px) {
+    .hero-section {
+      margin-top: 0;
+      height: calc(100vh - 64px);
+      padding-top: 0;
+      padding-bottom: 0;
+    }
   }
 
   .hero-section::before {
@@ -57,9 +67,9 @@
     animation: gradient 15s ease infinite;
   }
 
-  /* Add padding to account for fixed header */
-  main {
-    @apply pt-[120px] sm:pt-[100px];
+  /* Add padding to account for fixed header - exclude home page */
+  main:not(:has(> .hero-section)) {
+    @apply pt-14 md:pt-[120px];
   }
 
   /* Font settings */

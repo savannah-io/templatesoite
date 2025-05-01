@@ -337,16 +337,16 @@ function ServicesContent() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 20, scale: 0.95 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl relative overflow-hidden"
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl relative overflow-y-auto max-h-[90vh] md:max-h-[85vh]"
               >
                 <button
                   onClick={handleCloseModal}
-                  className="absolute right-4 top-4 p-2 rounded-full bg-white/80 hover:bg-gray-100 z-10 transition-colors duration-200"
+                  className="fixed right-6 top-6 p-2 rounded-full bg-white/90 hover:bg-gray-100 z-10 transition-colors duration-200 shadow-lg"
                 >
                   <XMarkIcon className="w-6 h-6 text-gray-600" />
                 </button>
 
-                <div className="relative h-[400px]">
+                <div className="relative h-[250px] md:h-[400px]">
                   <Image
                     src={selectedCategoryData.bgImage}
                     alt={selectedCategoryData.title}
@@ -355,16 +355,16 @@ function ServicesContent() {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-8">
-                    <div className="flex items-center gap-6">
-                      <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${selectedCategoryData.color} text-white flex items-center justify-center p-4`}>
+                  <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
+                    <div className="flex items-start md:items-center gap-4 md:gap-6">
+                      <div className={`w-12 h-12 md:w-16 md:h-16 rounded-xl bg-gradient-to-br ${selectedCategoryData.color} text-white flex items-center justify-center p-3 md:p-4`}>
                         {selectedCategoryData.icon}
                       </div>
                       <div>
-                        <h2 className="text-3xl font-display font-bold text-white mb-2">
+                        <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-1 md:mb-2">
                           {selectedCategoryData.title}
                         </h2>
-                        <p className="text-gray-200 text-lg">
+                        <p className="text-gray-200 text-base md:text-lg line-clamp-2 md:line-clamp-none">
                           {selectedCategoryData.description}
                         </p>
                       </div>
@@ -372,25 +372,25 @@ function ServicesContent() {
                   </div>
                 </div>
 
-                <div className="p-8">
-                  <div className="grid md:grid-cols-2 gap-8">
+                <div className="p-6 md:p-8">
+                  <div className="grid md:grid-cols-2 gap-4 md:gap-8">
                     {selectedCategoryData.services.map((service, idx) => (
                       <motion.div
                         key={service.title}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.1 }}
-                        className="bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition-colors duration-200"
+                        className="bg-gray-50 rounded-xl p-4 md:p-6 hover:bg-gray-100 transition-colors duration-200"
                       >
-                        <div className="flex items-start gap-4">
-                          <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${selectedCategoryData.color} text-white flex items-center justify-center p-3`}>
+                        <div className="flex items-start gap-3 md:gap-4">
+                          <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-br ${selectedCategoryData.color} text-white flex items-center justify-center p-2 md:p-3 shrink-0`}>
                             {service.icon}
                           </div>
                           <div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">
+                            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-1 md:mb-2">
                               {service.title}
                             </h3>
-                            <p className="text-gray-600">
+                            <p className="text-gray-600 text-sm md:text-base">
                               {service.description}
                             </p>
                           </div>

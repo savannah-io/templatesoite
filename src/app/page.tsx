@@ -30,7 +30,7 @@ export default function Home() {
       <Header />
       
       {/* Hero Section */}
-      <section className="hero-section min-h-[90vh] flex items-center relative pt-24 pb-28 bg-[url('/images/back3.png')] bg-cover bg-center">
+      <section className="hero-section relative overflow-hidden">
         <MouseFollowGradient variant="dark" opacity={0.8} />
         {/* Main overlay gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-primary-600/50 via-primary-700/25 to-primary-800/40 pointer-events-none"></div>
@@ -53,9 +53,9 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="container mx-auto px-4 relative z-20">
+        <div className="container mx-auto px-4 relative z-20 h-full flex items-center">
           <motion.div 
-            className="hero-content max-w-3xl"
+            className="hero-content max-w-3xl md:py-12"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
