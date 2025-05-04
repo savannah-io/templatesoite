@@ -83,11 +83,8 @@ const Header = () => {
 
       {/* Main navigation */}
       <div 
-        className="w-full transition-all duration-300"
+        className={`w-full transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur' : 'bg-transparent md:bg-white'} ${isScrolled ? 'shadow-md' : ''}`}
         style={{
-          backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
-          backdropFilter: isScrolled ? 'blur(8px)' : 'none',
-          boxShadow: isScrolled ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none',
           background: !isScrolled && isMobileMenuOpen ? 'linear-gradient(to right, rgba(14, 165, 233, 0.95), rgba(2, 132, 199, 0.95))' : undefined
         }}
       >

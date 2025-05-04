@@ -187,7 +187,7 @@ function ServicesContent() {
       <Header />
       
       {/* Hero Section */}
-      <section className="relative pt-24 pb-16 overflow-hidden bg-gradient-to-br from-primary-800 via-primary-700 to-primary-600">
+      <section className="relative pt-24 md:pt-32 pb-16 overflow-hidden bg-gradient-to-br from-primary-800 via-primary-700 to-primary-600">
         {/* Animated background elements */}
         <div className="absolute inset-0 overflow-hidden">
           {/* Large blurred circles */}

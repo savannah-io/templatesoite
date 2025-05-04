@@ -48,6 +48,12 @@
     }
   }
 
+  @media (max-width: 767px) {
+    .hero-section {
+      background-attachment: scroll;
+    }
+  }
+
   .hero-section::before {
     display: none;
   }
@@ -69,7 +75,7 @@
 
   /* Add padding to account for fixed header - exclude home page */
   main:not(:has(> .hero-section)) {
-    @apply pt-14 md:pt-[120px];
+    @apply pt-14 md:pt-0;
   }
 
   /* Font settings */

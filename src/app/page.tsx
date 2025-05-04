@@ -77,7 +77,8 @@ export default function Home() {
               </span>
             </h1>
             <p className="text-xl mb-12 text-gray-100 max-w-2xl leading-relaxed drop-shadow-lg font-medium">
-              Quality collision repair with exceptional customer service. Get your car back to pre-accident condition with our skilled technicians.
+              Quality collision repair with exceptional customer service.
+              <span className="hidden sm:inline"> Get your car back to pre-accident condition with our skilled technicians.</span>
             </p>
             <div className="flex flex-col sm:flex-row gap-6">
               <motion.a
