@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { MapPinIcon, PhoneIcon, EnvelopeIcon, ClockIcon, UserGroupIcon } from '@heroicons/react/24/outline'
 import { usePrivacyPolicy, useTermsOfService } from './PolicyModals'
+import Image from 'next/image'
 
 // Add social icons imports
 const FacebookIcon = () => (
@@ -65,14 +66,21 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-6xl mx-auto">
           {/* Brand Section */}
           <div className="col-span-1">
-            <motion.h2 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-2xl font-montserrat font-bold bg-gradient-to-r from-sky-500 to-primary-700 bg-clip-text text-transparent mb-4 hover:scale-105 transition-transform duration-300"
+              className="mb-4 flex items-center"
             >
-              Taylor&apos;s Collision
-            </motion.h2>
+              <Image
+                src="/images/TC-TITLE.png"
+                alt="Taylor's Collision Logo"
+                width={250}
+                height={60}
+                priority
+                className="h-auto w-[210px] md:w-[250px] object-contain"
+              />
+            </motion.div>
             <motion.p 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
