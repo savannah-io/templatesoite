@@ -50,6 +50,10 @@
 
   @media (max-width: 767px) {
     .hero-section {
+      background-image: url('/images/TC-MOBILE-BG.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
       background-attachment: scroll;
     }
   }

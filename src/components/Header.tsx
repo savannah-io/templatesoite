@@ -5,6 +5,7 @@ import { PhoneIcon, MapPinIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
+import Image from 'next/image'
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -91,29 +92,33 @@ const Header = () => {
         <div className="container mx-auto px-4">
           <nav className="h-14 flex items-center justify-between py-3">
             <Link href="/" className="relative group">
-              <span className="text-2xl md:text-3xl font-montserrat font-bold bg-gradient-to-r from-sky-500 to-primary-700 bg-clip-text text-transparent transition-all duration-300 group-hover:from-sky-400 group-hover:to-primary-600 md:transform-none">
-                Taylor&apos;s Collision
-              </span>
+              <Image
+                src="/images/TC-TITLE.png"
+                alt="Taylor's Collision Logo"
+                width={320}
+                height={70}
+                priority
+                className="h-auto w-[220px] md:w-[320px] object-contain"
+              />
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-sky-500 transition-all duration-300 group-hover:w-full hidden md:block"></span>
             </Link>
-            
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-10">
-              {['Home', 'Services', 'Reviews', 'Contact'].map((item) => (
-                <Link 
-                  key={item}
-                  href={item === 'Home' ? '/' : `/${item.toLowerCase()}`}
-                  className="relative group text-gray-700 transition-colors duration-300"
-                >
-                  <span className={`relative font-medium tracking-wide inline-block py-2.5 text-base ${isActivePath(item) ? 'text-blue-500' : 'group-hover:text-primary-600'}`}>
-                    {item}
-                    <span className={`absolute left-0 bottom-0 w-full h-0.5 bg-blue-500 transform origin-left ${isActivePath(item) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'} transition-transform duration-300 ease-out`}></span>
-                    <span className={`absolute left-0 -bottom-px w-full h-[2px] bg-blue-500/20 transform origin-left ${isActivePath(item) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'} transition-transform duration-300 ease-out delay-75`}></span>
-                  </span>
-                </Link>
-              ))}
+            <div className="flex-1 flex justify-center">
+              <div className="hidden md:flex items-center gap-10">
+                {['Home', 'Services', 'Reviews', 'Contact'].map((item) => (
+                  <Link 
+                    key={item}
+                    href={item === 'Home' ? '/' : `/${item.toLowerCase()}`}
+                    className="relative group text-gray-700 transition-colors duration-300"
+                  >
+                    <span className={`relative font-medium tracking-wide inline-block py-2.5 text-base ${isActivePath(item) ? 'text-blue-500' : 'group-hover:text-primary-600'}`}> 
+                      {item}
+                      <span className={`absolute left-0 bottom-0 w-full h-0.5 bg-blue-500 transform origin-left ${isActivePath(item) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'} transition-transform duration-300 ease-out`}></span>
+                      <span className={`absolute left-0 -bottom-px w-full h-[2px] bg-blue-500/20 transform origin-left ${isActivePath(item) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'} transition-transform duration-300 ease-out delay-75`}></span>
+                    </span>
+                  </Link>
+                ))}
+              </div>
             </div>
-
             {/* Mobile Menu Button */}
             <button
               className="md:hidden relative p-2 rounded-lg transition-all duration-300 group bg-gradient-to-r from-sky-500/10 to-primary-600/10"
@@ -127,7 +132,6 @@ const Header = () => {
                 <Bars3Icon className="h-5 w-5 text-primary-600 relative z-10 transition-transform duration-300 transform group-hover:scale-110" />
               )}
             </button>
-
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -173,8 +177,15 @@ const Header = () => {
               <div className="flex flex-col h-full">
                 {/* Mobile Menu Header */}
                 <div className="p-4 border-b border-gray-200">
-                  <Link href="/" className="text-2xl font-montserrat font-bold bg-gradient-to-r from-sky-500 to-primary-700 bg-clip-text text-transparent">
-                    Taylor&apos;s Collision
+                  <Link href="/">
+                    <Image
+                      src="/images/TC-TITLE.png"
+                      alt="Taylor's Collision Logo"
+                      width={200}
+                      height={50}
+                      priority
+                      className="h-auto w-[200px] object-contain"
+                    />
                   </Link>
                 </div>
 
