@@ -35,10 +35,19 @@ export const metadata: Metadata = {
   keywords: 'auto body shop, collision repair, car repair, Duluth, Georgia, Taylor\'s Collision',
   icons: {
     icon: [
-      {
-        url: '/favi.svg',
-        type: 'image/svg+xml',
-      }
+      { url: '/favicon/favicon.ico', type: 'image/x-icon' },
+      { url: '/favicon/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon/favicon-16x16.png', type: 'image/png', sizes: '16x16' },
+      { url: '/favicon/apple-touch-icon.png', type: 'image/png', sizes: '180x180' }
+    ],
+    shortcut: [
+      { url: '/favicon/favicon.ico', type: 'image/x-icon' }
+    ],
+    apple: [
+      { url: '/favicon/apple-touch-icon.png', sizes: '180x180' }
+    ],
+    other: [
+      { rel: 'manifest', url: '/favicon/site.webmanifest' }
     ]
   }
 }
