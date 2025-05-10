@@ -90,7 +90,7 @@ const Header = () => {
         }}
       >
         <div className="container mx-auto px-4">
-          <nav className="h-14 flex items-center justify-between py-3">
+          <nav className="flex items-center justify-between h-20">
             <Link href="/" className="relative group">
               <Image
                 src="/images/TC-TITLE.png"
@@ -135,7 +135,7 @@ const Header = () => {
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="hidden md:block"
+              className="hidden md:block ml-4"
             >
               <Link 
                 href="/" 
