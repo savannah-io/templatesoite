@@ -1,7 +1,7 @@
 {
   "name": "templatesoite",
   "version": "1.0.0",
-  "description": "Taylor's Collision website",
+  "description": "AutoSite Template Site",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
