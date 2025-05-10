@@ -90,16 +90,11 @@ const Header = () => {
         }}
       >
         <div className="container mx-auto px-4">
-          <nav className="flex items-center justify-between h-20">
+          <nav className="flex items-center justify-between h-14">
             <Link href="/" className="relative group">
-              <Image
-                src="/images/TC-TITLE.png"
-                alt="Taylor's Collision Logo"
-                width={320}
-                height={70}
-                priority
-                className="h-auto w-[220px] md:w-[320px] object-contain"
-              />
+              <span className="text-gradient font-bold text-2xl md:text-3xl font-rubik block leading-tight select-none">
+                Taylor's Collision
+              </span>
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-sky-500 transition-all duration-300 group-hover:w-full hidden md:block"></span>
             </Link>
             <div className="flex-1 flex justify-center">
@@ -176,16 +171,11 @@ const Header = () => {
             <div className="absolute right-0 top-0 h-full w-64 bg-white shadow-xl">
               <div className="flex flex-col h-full">
                 {/* Mobile Menu Header */}
-                <div className="p-4 border-b border-gray-200">
+                <div className="p-2 border-b border-gray-200">
                   <Link href="/">
-                    <Image
-                      src="/images/TC-TITLE.png"
-                      alt="Taylor's Collision Logo"
-                      width={200}
-                      height={50}
-                      priority
-                      className="h-auto w-[200px] object-contain"
-                    />
+                    <span className="text-gradient font-bold text-2xl md:text-3xl font-rubik block leading-tight select-none">
+                      Taylor's Collision
+                    </span>
                   </Link>
                 </div>
 

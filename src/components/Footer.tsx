@@ -70,16 +70,11 @@ export default function Footer() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="mb-4 flex items-center"
+              className="mb-2 flex items-center"
             >
-              <Image
-                src="/images/TC-TITLE.png"
-                alt="Taylor's Collision Logo"
-                width={250}
-                height={60}
-                priority
-                className="h-auto w-[210px] md:w-[250px] object-contain"
-              />
+              <span className="text-gradient font-bold text-2xl md:text-3xl font-rubik block leading-tight select-none">
+                Taylor's Collision
+              </span>
             </motion.div>
             <motion.p 
               initial={{ opacity: 0, y: 20 }}

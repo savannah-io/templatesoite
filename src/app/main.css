@@ -199,7 +199,7 @@ main {
 }
 
 .text-gradient {
-  @apply text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-800;
+  @apply text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-blue-900;
 }
 
 /* Animations */
@@ -249,4 +249,11 @@ main {
   100% {
     background-position: -200% 0;
   }
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@700&display=swap');
+
+.font-rubik {
+  font-family: 'Rubik', 'Montserrat', 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.025em;
 } 
