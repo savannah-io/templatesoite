@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Job Application</title>
+</head>
+<body>
+    <h2>Test Job Application Form</h2>
+    <div id="connectionStatus" style="margin-bottom: 20px; padding: 10px; background-color: #f0f0f0;"></div>
+    <form id="jobForm">
+        <input type="text" id="firstName" placeholder="First Name" value="Test" required><br>
+        <input type="text" id="lastName" placeholder="Last Name" value="User" required><br>
+        <input type="email" id="email" placeholder="Email" value="test@example.com" required><br>
+        <input type="tel" id="phone" placeholder="Phone" value="555-555-5555" required><br>
+        <input type="text" id="address" placeholder="Address" value="123 Test St" required><br>
+        <input type="text" id="city" placeholder="City" value="Test City" required><br>
+        <input type="text" id="state" placeholder="State" value="TS" required><br>
+        <input type="text" id="zip" placeholder="ZIP" value="12345" required><br>
+        <input type="text" id="position" placeholder="Position" value="Test Position" required><br>
+        <input type="text" id="startDate" placeholder="Start Date" value="2024-05-01" required><br>
+        <textarea id="experience" placeholder="Experience">Test experience</textarea><br>
+        <button type="submit">Submit Test</button>
+    </form>
+    <div id="result"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const supabaseUrl = 'https://chngatcsmtsiaxkyrclp.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNobmdhdGNzbXRzaWF4a3lyY2xwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU1MDg3MTQsImV4cCI6MjA2MTA4NDcxNH0.jXgnZkBwJ570LPBXMDgnJTgOlLzUwdhuPPUeiHp9y6g';
+            
+            const connectionStatus = document.getElementById('connectionStatus');
+            const result = document.getElementById('result');
+
+            // First try a direct fetch to test basic connectivity
+            try {
+                console.log('Testing direct API connection...');
+                connectionStatus.innerHTML = 'Testing direct API connection...';
+                
+                const response = await fetch(`${supabaseUrl}/rest/v1/job_applications?select=count`, {
+                    headers: {
+                        'apikey': supabaseKey,
+                        'Authorization': `Bearer ${supabaseKey}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                console.log('Direct API connection successful');
+                connectionStatus.innerHTML += '<br>✅ Direct API connection successful';
+            } catch (error) {
+                console.error('Direct API connection error:', error);
+                connectionStatus.innerHTML += `<br>❌ Direct API error: ${error.message}`;
+            }
+
+            // Then try with Supabase client
+            try {
+                console.log('Initializing Supabase client...');
+                connectionStatus.innerHTML += '<br>Initializing Supabase client...';
+                
+                const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey, {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true
+                    }
+                });
+
+                // Test the connection with a simple query
+                const { data, error } = await supabaseClient
+                    .from('job_applications')
+                    .select('*', { count: 'exact', head: true });
+
+                if (error) {
+                    throw error;
+                }
+
+                console.log('Supabase connection successful');
+                connectionStatus.innerHTML += '<br>✅ Supabase client connection successful';
+                connectionStatus.style.backgroundColor = '#e6ffe6';
+            } catch (error) {
+                console.error('Supabase initialization error:', error);
+                connectionStatus.innerHTML += `<br>❌ Supabase client error: ${error.message}`;
+                connectionStatus.style.backgroundColor = '#ffe6e6';
+                return;
+            }
+
+            document.getElementById('jobForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                result.innerHTML = 'Submitting...';
+                console.log('Attempting to submit form...');
+                
+                try {
+                    const formData = {
+                        first_name: document.getElementById('firstName').value,
+                        last_name: document.getElementById('lastName').value,
+                        email: document.getElementById('email').value,
+                        phone: document.getElementById('phone').value,
+                        address: document.getElementById('address').value,
+                        city: document.getElementById('city').value,
+                        state: document.getElementById('state').value,
+                        zip: document.getElementById('zip').value,
+                        position: document.getElementById('position').value,
+                        start_date: document.getElementById('startDate').value,
+                        experience: document.getElementById('experience').value,
+                        created_at: new Date().toISOString()
+                    };
+
+                    // Try direct API call first
+                    const response = await fetch(`${supabaseUrl}/rest/v1/job_applications`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': supabaseKey,
+                            'Authorization': `Bearer ${supabaseKey}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    result.innerHTML = '✅ Success! Application submitted.';
+                    result.style.backgroundColor = '#e6ffe6';
+                    result.style.padding = '10px';
+                    console.log('Submitted successfully');
+                } catch (error) {
+                    console.error('Submission error:', error);
+                    result.innerHTML = '❌ Error: ' + error.message;
+                    result.style.backgroundColor = '#ffe6e6';
+                    result.style.padding = '10px';
+                }
+            });
+        });
+    </script>
+</body>
+</html> 
