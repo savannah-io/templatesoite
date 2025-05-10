@@ -9,7 +9,7 @@ This repository is a reusable template for creating Next.js sites with Supabase,
         [x] New Project name -> Public -> Init w/ README.md & .gitignore (node)
 
   (1.2) Copy project to new local directory && Open Cursor in new directory
-        [ ] (In Template Terminal) Run: cp -r . /c/Users/J/OneDrive/Desktop/Sites/{NEW-SITE-PROJECT-DIRECTORY}
+        [ ] (In Template Terminal) Run: cp -r . /c/Users/J/OneDrive/Desktop/Sites/[NEW-SITE-PROJECT-DIRECTORY]
         [ ] Right Click Directory -> More Options -> |OPEN WITH CURSOR|
 
   (1.3) Edit package.json file  name/description
@@ -22,10 +22,10 @@ This repository is a reusable template for creating Next.js sites with Supabase,
         [ ] In terminal, Ctrl+C to kill the terminal
 
   (1.4) Initialize Git 
-        [ ] IN TERMINAL RUN: git remote set-url origin https://github.com/savannah-io/{NEW-SITE-PROJECT-DIRECTORY}
+        [ ] IN TERMINAL RUN: git remote set-url origin https://github.com/savannah-io/[NEW-SITE-PROJECT-DIRECTORY]
         [ ] ->             : git remote -v (to check status) 
-        [ ] ->             : git remote -v (to check status) 
-        [ ] ->             : git remote -v (to check status) 
+        [ ] ->             : git git add . (to add local codebase to repository) 
+        [ ] ->             : git git commit -m "Initial commit: [NAME] project"
 
   (1.5) Copy project to new local directory && Open Cursor in new directory
         [ ] (In Template Terminal) Run: cp -r . /c/Users/J/OneDrive/Desktop/Sites/{NEW-SITE-PROJECT-DIRECTORY}
