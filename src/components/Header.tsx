@@ -6,11 +6,20 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
+import { useConfig } from '@/context/ConfigContext'
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+  const config = useConfig()
+
+  const navBar = config.navBar || {};
+  const navLinks = navBar.navLinks || [];
+  const navBg = navBar.backgroundColor || '#fff';
+  const navText = navBar.textColor || '#0369a1';
+
+  const infoBar = config.infoBar || {};
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,57 +36,41 @@ const Header = () => {
     setIsMobileMenuOpen(false)
   }, [pathname])
 
-  const isActivePath = (path: string) => {
-    if (path === 'Home') return pathname === '/'
-    return pathname === `/${path.toLowerCase()}`
+  const isActivePath = (path: any) => {
+    if (path === '/' || path.toLowerCase() === 'home') return pathname === '/';
+    return pathname === path;
   }
 
   return (
     <header className="w-full fixed top-0 left-0 right-0 z-50">
-      {/* Top bar */}
+      {/* Top info bar: phone, location, hours only */}
       <div 
-        className="hidden md:block bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 text-white transition-all duration-300 ease-out backdrop-blur-sm"
-        style={{ 
-          height: isScrolled ? '0' : '44px',
-          opacity: isScrolled ? '0' : '1',
-          overflow: 'hidden'
-        }}
+        className="w-full text-white transition-all duration-300 ease-out backdrop-blur-sm"
+        style={{ background: infoBar.backgroundColor || '#1787c9', height: isScrolled ? '0' : '44px', opacity: isScrolled ? '0' : '1', overflow: 'hidden' }}
       >
         <div className="container mx-auto px-4 h-11">
           <div className="h-full flex items-center justify-between">
             <div className="flex items-center gap-8 text-sm">
-              <motion.a 
-                href="tel:+17704950050" 
-                className="flex items-center gap-2 hover:text-white/90 transition-colors group"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <span className="bg-white/10 p-1.5 rounded-full group-hover:bg-white/20 transition-colors">
-                  <PhoneIcon className="h-3.5 w-3.5" />
+              {infoBar.phone && (
+                <span className="flex items-center gap-2">
+                  <PhoneIcon className="h-4 w-4" />
+                  <span className="font-medium tracking-wide">{infoBar.phone}</span>
                 </span>
-                <span className="font-medium tracking-wide">(770) 495-0050</span>
-              </motion.a>
-              <motion.a 
-                href="https://goo.gl/maps/your-maps-link" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="flex items-center gap-2 hover:text-white/90 transition-colors group"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <span className="bg-white/10 p-1.5 rounded-full group-hover:bg-white/20 transition-colors">
-                  <MapPinIcon className="h-3.5 w-3.5 flex-shrink-0" />
+              )}
+              {infoBar.address && (
+                <span className="flex items-center gap-2">
+                  <MapPinIcon className="h-4 w-4 flex-shrink-0" />
+                  <span className="font-medium tracking-wide">{infoBar.address}</span>
                 </span>
-                <span className="font-medium tracking-wide">2785 Buford Hwy Ste 101-C, Duluth, GA 30096</span>
-              </motion.a>
+              )}
             </div>
-            <div className="hidden lg:flex items-center gap-2">
-              <div className="bg-white/10 px-4 py-1.5 rounded-full">
-                <span className="text-sm font-medium tracking-wide">
-                  Mon-Fri: 8:30 AM - 6:00 PM
+            {infoBar.hours && (
+              <div className="flex items-center gap-2">
+                <span className="bg-white/20 px-4 py-1.5 rounded-full font-medium tracking-wide">
+                  {infoBar.hours}
                 </span>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -86,29 +79,54 @@ const Header = () => {
       <div 
         className={`w-full transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur' : 'bg-transparent md:bg-white'} ${isScrolled ? 'shadow-md' : ''}`}
         style={{
-          background: !isScrolled && isMobileMenuOpen ? 'linear-gradient(to right, rgba(14, 165, 233, 0.95), rgba(2, 132, 199, 0.95))' : undefined
+          background: isScrolled ? navBg : (!isScrolled && isMobileMenuOpen ? 'linear-gradient(to right, rgba(14, 165, 233, 0.95), rgba(2, 132, 199, 0.95))' : navBg)
         }}
       >
         <div className="container mx-auto px-4">
-          <nav className="flex items-center justify-between h-14">
-            <Link href="/" className="relative group">
-              <span className="text-gradient font-bold text-2xl md:text-3xl font-rubik block leading-tight select-none">
-                Taylor's Collision
-              </span>
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-sky-500 transition-all duration-300 group-hover:w-full hidden md:block"></span>
+          <nav className="flex items-center justify-between py-3">
+            <Link href="/" className="relative group flex items-center gap-2">
+              {config.showLogo && config.navBar?.logo ? (
+                <img src={config.navBar.logo.startsWith('/') ? config.navBar.logo : `/images/${config.navBar.logo}`} alt={config.navBar.siteTitle} className="h-8 w-auto object-contain" />
+              ) : (
+                <span
+                  className="font-bold text-2xl md:text-3xl font-rubik leading-tight select-none"
+                  style={{
+                    background: `linear-gradient(90deg, ${config.navBar.siteTitleGradientFrom || '#3b82f6'}, ${config.navBar.siteTitleGradientTo || '#06b6d4'})`,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    color: 'transparent',
+                    display: 'inline',
+                  }}
+                >
+                  {config.navBar.siteTitle || 'Site Title'}
+                </span>
+              )}
             </Link>
             <div className="flex-1 flex justify-center">
               <div className="hidden md:flex items-center gap-10">
-                {['Home', 'Services', 'Reviews', 'Contact'].map((item) => (
+                {navLinks.map((item: any) => (
                   <Link 
-                    key={item}
-                    href={item === 'Home' ? '/' : `/${item.toLowerCase()}`}
-                    className="relative group text-gray-700 transition-colors duration-300"
+                    key={item.label}
+                    href={item.path}
+                    className="relative group transition-colors duration-300"
+                    style={{ color: navText }}
                   >
-                    <span className={`relative font-medium tracking-wide inline-block py-2.5 text-base ${isActivePath(item) ? 'text-blue-500' : 'group-hover:text-primary-600'}`}> 
-                      {item}
-                      <span className={`absolute left-0 bottom-0 w-full h-0.5 bg-blue-500 transform origin-left ${isActivePath(item) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'} transition-transform duration-300 ease-out`}></span>
-                      <span className={`absolute left-0 -bottom-px w-full h-[2px] bg-blue-500/20 transform origin-left ${isActivePath(item) ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'} transition-transform duration-300 ease-out delay-75`}></span>
+                    <span className={`relative font-medium tracking-wide inline-block py-2.5 text-base ${isActivePath(item.path) ? '' : ''}`}
+                      style={isActivePath(item.path) ? { color: config.navBar?.activeTabColor || '#3b82f6' } : {}}>
+                      {item.label}
+                      <span className="absolute left-0 bottom-0 w-full h-0.5 transform origin-left transition-transform duration-300 ease-out"
+                        style={{
+                          background: isActivePath(item.path) ? (config.navBar?.activeTabColor || '#3b82f6') : 'transparent',
+                          transform: isActivePath(item.path) ? 'scaleX(1)' : 'scaleX(0)',
+                        }}
+                      ></span>
+                      <span className="absolute left-0 -bottom-px w-full h-[2px] transform origin-left transition-transform duration-300 ease-out delay-75"
+                        style={{
+                          background: isActivePath(item.path) ? (config.navBar?.activeTabColor || '#3b82f6') + '33' : 'transparent',
+                          transform: isActivePath(item.path) ? 'scaleX(1)' : 'scaleX(0)',
+                        }}
+                      ></span>
                     </span>
                   </Link>
                 ))}
@@ -134,7 +152,11 @@ const Header = () => {
             >
               <Link 
                 href="/" 
-                className="inline-flex items-center justify-center bg-primary-600 text-white h-11 px-6 rounded-md font-medium shadow-lg hover:bg-primary-700 transition-all duration-300 hover:shadow-xl whitespace-nowrap"
+                className="inline-flex items-center justify-center text-white h-11 px-6 rounded-md font-medium shadow-lg transition-all duration-300 hover:shadow-xl whitespace-nowrap"
+                style={{
+                  background: config.navBar?.scheduleButtonColor || '#2563eb',
+                  border: 'none',
+                }}
                 onClick={(e) => {
                   e.preventDefault();
                   if (window.location.pathname === '/') {
@@ -144,7 +166,7 @@ const Header = () => {
                   }
                 }}
               >
-                Schedule Now
+                {config.navBar?.scheduleButtonText || 'Schedule Now'}
               </Link>
             </motion.div>
           </nav>
@@ -173,26 +195,41 @@ const Header = () => {
                 {/* Mobile Menu Header */}
                 <div className="p-2 border-b border-gray-200">
                   <Link href="/">
-                    <span className="text-gradient font-bold text-2xl md:text-3xl font-rubik block leading-tight select-none">
-                      Taylor's Collision
-                    </span>
+                    {config.showLogo && config.navBar?.logo ? (
+                      <img src={config.navBar.logo.startsWith('/') ? config.navBar.logo : `/images/${config.navBar.logo}`} alt={config.navBar.siteTitle} className="h-8 w-auto object-contain" />
+                    ) : (
+                      <span
+                        className="font-bold text-2xl md:text-3xl font-rubik leading-tight select-none"
+                        style={{
+                          background: `linear-gradient(90deg, ${config.navBar.siteTitleGradientFrom || '#3b82f6'}, ${config.navBar.siteTitleGradientTo || '#06b6d4'})`,
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          backgroundClip: 'text',
+                          color: 'transparent',
+                          display: 'inline',
+                        }}
+                      >
+                        {config.navBar.siteTitle || 'Site Title'}
+                      </span>
+                    )}
                   </Link>
                 </div>
 
                 {/* Mobile Navigation Links */}
                 <nav className="flex-1 p-4">
                   <div className="flex flex-col space-y-4">
-                    {['Home', 'Services', 'Reviews', 'Contact'].map((item) => (
+                    {navLinks.map((item: any) => (
                       <Link
-                        key={item}
-                        href={item === 'Home' ? '/' : `/${item.toLowerCase()}`}
+                        key={item.label}
+                        href={item.path}
                         className={`text-lg font-medium py-2 px-4 rounded-lg transition-colors ${
-                          isActivePath(item)
+                          isActivePath(item.path)
                             ? 'bg-primary-50 text-primary-600'
                             : 'text-gray-700 hover:bg-gray-50'
                         }`}
+                        style={{ color: navText }}
                       >
-                        {item}
+                        {item.label}
                       </Link>
                     ))}
                   </div>
@@ -212,7 +249,11 @@ const Header = () => {
                     </div>
                     <Link 
                       href="/" 
-                      className="w-full inline-flex items-center justify-center bg-primary-600 text-white h-11 px-6 rounded-md font-medium shadow-lg hover:bg-primary-700 transition-all duration-300"
+                      className="w-full inline-flex items-center justify-center text-white h-11 px-6 rounded-md font-medium shadow-lg transition-all duration-300 hover:shadow-xl whitespace-nowrap"
+                      style={{
+                        background: config.navBar?.scheduleButtonColor || '#2563eb',
+                        border: 'none',
+                      }}
                       onClick={(e) => {
                         e.preventDefault();
                         setIsMobileMenuOpen(false);
@@ -223,7 +264,7 @@ const Header = () => {
                         }
                       }}
                     >
-                      Schedule Now
+                      {config.navBar?.scheduleButtonText || 'Schedule Now'}
                     </Link>
                   </div>
                 </div>
