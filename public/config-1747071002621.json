@@ -1,0 +1,456 @@
+{
+  "showLogo": false,
+  "infoBar": {
+    "backgroundColor": "#f5d6d6",
+    "phone": "(XXX) XXX-XXXX",
+    "address": "*ENTER_ADDRESS_HERE*",
+    "hours": "*DAY-DAY: TIME AM - TIME PM*",
+    "textColor": "#000000"
+  },
+  "navBar": {
+    "backgroundColor": "#e00000",
+    "textColor": "#163227",
+    "logo": "TC-TITLE.png",
+    "siteTitle": "Davis Tree Removal",
+    "siteTitleGradientFrom": "#66bf9b",
+    "siteTitleGradientTo": "#387e62",
+    "scheduleButtonText": "Schedule Now",
+    "scheduleButtonColor": "#66bf9b",
+    "activeTabColor": "#66bf9b",
+    "navLinks": [
+      {
+        "path": "/",
+        "label": "Home"
+      },
+      {
+        "path": "/services",
+        "label": "Services"
+      },
+      {
+        "path": "/reviews",
+        "label": "Reviews"
+      },
+      {
+        "path": "/contact",
+        "label": "Contact"
+      }
+    ]
+  },
+  "pages": {
+    "Home": {
+      "badge": "TREE REMOVAL SERVICE",
+      "title": "Davis Tree Removal",
+      "location": "Watkinsville, Georgia",
+      "content": "<p>We provide top-quality tree removal services in Duluth, GA.</p>",
+      "subtitle2": "Our Prices Won't Stump You",
+      "heroImage": "dew.png",
+      "heroGradientColor": "#1c3f31",
+      "heroRadialColor": "#387e62",
+      "heroGradientTop": "#387e62",
+      "heroGradientMiddle": "#387e62",
+      "heroGradientBottom": "#387e62",
+      "heroGradientLeft": "#387e62",
+      "heroBadgeColor": "#74cca98e",
+      "heroBadgeTitleColor": "#387e62",
+      "heroTitleColor": "#ffffff",
+      "heroLocationColor": "#000000",
+      "heroSubtitleColor": "#fff",
+      "heroContentColor": "#fff",
+      "heroScheduleButtonColor": "#25eb71",
+      "heroScheduleButtonTextColor": "#fff",
+      "heroContactButtonColor": "#fff",
+      "heroContactButtonTextColor": "#4fc917",
+      "heroContactButtonBorderColor": "#fff",
+      "heroContactButtonHoverBgColor": "#5cbe1a",
+      "heroContactButtonHoverTextColor": "#1787c9",
+      "heroContactButtonHoverBorderColor": "#1787c9",
+      "heroBox1BgColor": "#387e62",
+      "heroBox1TextColor": "#fff",
+      "heroBox1BorderColor": "#387e62",
+      "heroBox1HoverBgColor": "#2e6b54",
+      "heroBox1HoverTextColor": "#fff",
+      "heroBox1HoverBorderColor": "#2e6b54",
+      "heroBox1IconBgColor": "#31937a",
+      "heroBox1IconColor": "#fff",
+      "heroBox2BgColor": "#2c7a2559",
+      "heroBox2TextColor": "#fff",
+      "heroBox2BorderColor": "#25647a",
+      "heroBox2HoverBgColor": "#17475a",
+      "heroBox2HoverTextColor": "#fff",
+      "heroBox2HoverBorderColor": "#17475a",
+      "heroBox2IconBgColor": "#387E62",
+      "heroBox2IconColor": "#fff",
+      "heroBox3BgColor": "#387e623f",
+      "heroBox3TextColor": "#fff",
+      "heroBox3BorderColor": "#25647a",
+      "heroBox3HoverBgColor": "#17475a",
+      "heroBox3HoverTextColor": "#fff",
+      "heroBox3HoverBorderColor": "#17475a",
+      "heroBox3IconBgColor": "#387E62",
+      "heroBox3IconColor": "#fff",
+      "scheduleSection": {
+        "badge": "BOOK YOUR SERVICE",
+        "title": "Schedule Your",
+        "highlight": "Auto Estimate",
+        "subtitle": "Book your appointment with our expert technicians. We'll get your vehicle back to its best condition.",
+        "address": "2785 Buford Hwy STE 101, Duluth, GA 30096",
+        "iconBgColor": "#2564eb67",
+        "iconColor": "#fff",
+        "titleColor": "#333333",
+        "subtitleColor": "#666666",
+        "badgeColor": "#d72660",
+        "highlightColor": "#fbbf24",
+        "calendarRippleStartColor": "#f3f4f6",
+        "calendarRippleEndColor": "#e0e7ef",
+        "calendarRippleOpacity": 0.7,
+        "tapToBookText": "Tap to Book",
+        "tapToBookTextColor": "#fff",
+        "calendarBgColor": "#f3f4f6",
+        "calendarAccentColor": "#2563eb",
+        "calendarBorderColor": "#d1d5db",
+        "calendlyUrl": "https://calendly.com/taylorscollision/collision_estimate",
+        "backgroundColor": "#f8fafc",
+        "gradientTop": "#f0f9ff",
+        "gradientBottom": "#e0f2fe"
+      },
+      "guaranteeSection": {
+        "title": "Our Guarantees",
+        "subtitle": "We stand by our quality and service",
+        "titleColor": "#333333",
+        "subtitleColor": "#666666",
+        "backgroundColor": "#ffffff",
+        "textColor": "#333333",
+        "gradientTop": "#f9fafb",
+        "gradientBottom": "#f3f4f6",
+        "cards": [
+          {
+            "title": "100% Satisfaction",
+            "description": "We're not happy until you're completely satisfied with our work",
+            "icon": "satisfaction.png",
+            "bgColor": "#e6f7ff",
+            "textColor": "#0369a1",
+            "borderColor": "#bae6fd",
+            "hoverBgColor": "#bae6fd",
+            "hoverTextColor": "#0284c7",
+            "hoverBorderColor": "#7dd3fc",
+            "iconBgColor": "#0284c7",
+            "iconColor": "#e0f2fe"
+          },
+          {
+            "title": "Lifetime Warranty",
+            "description": "Our repairs are guaranteed for as long as you own your vehicle",
+            "icon": "warranty.png",
+            "bgColor": "#f0fdf4",
+            "textColor": "#166534",
+            "borderColor": "#bbf7d0",
+            "hoverBgColor": "#bbf7d0",
+            "hoverTextColor": "#15803d",
+            "hoverBorderColor": "#86efac",
+            "iconBgColor": "#15803d",
+            "iconColor": "#dcfce7"
+          },
+          {
+            "title": "Expert Technicians",
+            "description": "Our certified technicians have years of experience and extensive training",
+            "icon": "certified.png",
+            "bgColor": "#fffbeb",
+            "textColor": "#92400e",
+            "borderColor": "#fde68a",
+            "hoverBgColor": "#fde68a",
+            "hoverTextColor": "#b45309",
+            "hoverBorderColor": "#fcd34d",
+            "iconBgColor": "#b45309",
+            "iconColor": "#fef3c7"
+          }
+        ],
+        "buttonText": "Learn More",
+        "buttonUrl": "/about",
+        "buttonBgColor": "#2563eb",
+        "buttonTextColor": "#ffffff",
+        "buttonBorderColor": "#1d4ed8",
+        "buttonHoverBgColor": "#1d4ed8",
+        "buttonHoverTextColor": "#ffffff",
+        "buttonHoverBorderColor": "#1e40af"
+      }
+    },
+    "Contact": {
+      "title": "Contact Us",
+      "content": "<p>Get in touch with our team today.</p>",
+      "heroImage": "/images/hero-contact.jpg"
+    },
+    "Reviews": {
+      "title": "Customer Reviews",
+      "highlight": "Our Community",
+      "subtitle": "We're committed to excellence",
+      "content": "<p>See what our customers say about us.</p>",
+      "titleColor": "#111827",
+      "highlightColor": "#4f46e5",
+      "subtitleColor": "#4b5563",
+      "contentColor": "#6b7280",
+      "badge": "Testimonials",
+      "badgeColor": "#f3e8ff",
+      "badgeTextColor": "#9333ea",
+      "heroBgColor": "#4f46e5",
+      "heroGradientStart": "#4338ca",
+      "heroGradientEnd": "#6366f1",
+      "heroOverlayOpacity": 0.5,
+      "reviewsSectionTitle": "What Our Customers Say",
+      "reviewsSectionSubtitle": "Read testimonials from satisfied customers",
+      "reviewsTitleColor": "#065f46",
+      "reviewsSubtitleColor": "#047857",
+      "testimonialLayout": "grid",
+      "cardsPerRow": "3",
+      "cardBgColor": "#ffffff",
+      "cardBorderColor": "#e5e7eb",
+      "cardTextColor": "#374151",
+      "cardShadow": "md",
+      "authorNameColor": "#111827",
+      "ratingColor": "#FBBF24",
+      "ctaTitle": "Ready to Experience Our Service?",
+      "ctaDescription": "Join our growing list of satisfied customers today.",
+      "ctaTitleColor": "#FFFFFF",
+      "ctaDescriptionColor": "#F3F4F6",
+      "ctaButtonText": "Schedule Now",
+      "ctaButtonUrl": "/#schedule",
+      "ctaButtonBgColor": "#FFFFFF",
+      "ctaButtonTextColor": "#4F46E5",
+      "ctaSecondaryButtonText": "Call Us",
+      "ctaSecondaryButtonUrl": "tel:+17704950050",
+      "ctaSecondaryButtonBgColor": "#4F46E5",
+      "ctaSecondaryButtonTextColor": "#FFFFFF",
+      "ctaBgColor": "#4F46E5",
+      "ctaGradientStart": "#4338ca",
+      "ctaGradientEnd": "#6366f1",
+      "ctaPatternStyle": "diagonal-lines",
+      "reviews": [
+        {
+          "text": "Max and the team did an incredible job on my 2020 Mazda CX-30. I'm extremely happy with the results and would recommend them to everyone!",
+          "author": "Jarrett B.",
+          "rating": 5
+        },
+        {
+          "text": "The owner Max was AMAZING!! His work is top notch! I think my vehicle actually looks better than it did before I had the accident!",
+          "author": "Jordan P.",
+          "rating": 5
+        },
+        {
+          "text": "Had a door out of alignment and Max fixed it in just a few minutes. No appointment. Just rolled in off the street. Great place.",
+          "author": "Rob G.",
+          "rating": 5
+        }
+      ]
+    },
+    "Services": {
+      "title": "Our Auto Body Services",
+      "subtitle": "Expert collision repair and auto body services in Duluth, GA. Quality work guaranteed.",
+      "badge": "Certified Auto Body Shop",
+      "yearsExperience": "15+",
+      "carsRepaired": "5000+",
+      "serviceCategories": [
+        {
+          "id": "collision",
+          "title": "Collision Services",
+          "icon": "<ExclamationTriangleIcon className=\"w-full h-full\" />",
+          "description": "Complete collision repair services to restore your vehicle to pre-accident condition",
+          "bgImage": "/images/back1.png",
+          "color": "from-primary-500 to-primary-600",
+          "services": [
+            {
+              "title": "Collision Repair",
+              "description": "Expert repair of vehicle damage from accidents",
+              "icon": "<WrenchScrewdriverIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Frame & Alignment",
+              "description": "Precise frame straightening and alignment services",
+              "icon": "<CogIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Paint Services",
+              "description": "Professional auto painting with color matching",
+              "icon": "<PaintBrushIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Dent Removal",
+              "description": "Skilled dent removal using advanced techniques",
+              "icon": "<WrenchIcon className=\"w-6 h-6\" />"
+            }
+          ]
+        },
+        {
+          "id": "cosmetic",
+          "title": "Cosmetic Services",
+          "icon": "<SparklesOutlineIcon className=\"w-full h-full\" />",
+          "description": "Premium cosmetic services to enhance and protect your vehicle's appearance",
+          "bgImage": "/images/back5.png",
+          "color": "from-primary-500 to-primary-600",
+          "services": [
+            {
+              "title": "Auto Detailing",
+              "description": "Comprehensive interior and exterior detailing",
+              "icon": "<SparklesIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Paint Protection",
+              "description": "Advanced paint protection and ceramic coating",
+              "icon": "<ShieldCheckIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Classic Restoration",
+              "description": "Expert restoration of vintage vehicles",
+              "icon": "<WrenchScrewdriverOutlineIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Wheel & Rim Services",
+              "description": "Professional wheel repair and restoration",
+              "icon": "<CogOutlineIcon className=\"w-6 h-6\" />"
+            }
+          ]
+        },
+        {
+          "id": "mechanical",
+          "title": "Mechanical Services",
+          "icon": "<CogIcon className=\"w-full h-full\" />",
+          "description": "Essential mechanical services and diagnostics for optimal vehicle performance",
+          "bgImage": "/images/back4.png",
+          "color": "from-primary-500 to-primary-600",
+          "services": [
+            {
+              "title": "Diagnostic Services",
+              "description": "Comprehensive vehicle diagnostics and assessment",
+              "icon": "<BeakerIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Check Engine Light",
+              "description": "Professional diagnosis and resolution",
+              "icon": "<ExclamationTriangleIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Fleet Services",
+              "description": "Specialized fleet maintenance and repair",
+              "icon": "<TruckIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Custom Fabrication",
+              "description": "Specialized metal fabrication and repairs",
+              "icon": "<WrenchIcon className=\"w-6 h-6\" />"
+            }
+          ]
+        }
+      ],
+      "expertiseTitle": "Why Expert Auto Body Repair Matters",
+      "expertiseDescription": "Modern vehicles are complex machines requiring specialized knowledge and equipment for proper repairs. Choosing the right auto body shop can make all the difference in your vehicle's safety and longevity.",
+      "expertiseCards": [
+        {
+          "title": "Safety First",
+          "description": "Proper repairs ensure your vehicle's structural integrity and safety systems function correctly, protecting you and your passengers."
+        },
+        {
+          "title": "Advanced Technology",
+          "description": "We use state-of-the-art equipment and techniques to diagnose and repair modern vehicles with precision and accuracy."
+        },
+        {
+          "title": "Long-Term Value",
+          "description": "Expert repairs maintain your vehicle's value and prevent future problems, saving you money in the long run."
+        }
+      ],
+      "ctaTitle": "Ready to Get Your Car Back to Perfect?",
+      "ctaDescription": "Schedule your appointment today and experience the difference expert auto body repair makes.",
+      "scheduleButtonText": "Schedule Now",
+      "callButtonText": "Call Us Now",
+      "heroImage": "/images/hero-services.jpg"
+    }
+  },
+  "theme": {
+    "primary600": "#2563eb",
+    "primary700": "#1d4ed8"
+  },
+  "navLinks": [
+    {
+      "path": "/",
+      "label": "Home"
+    },
+    {
+      "path": "/services",
+      "label": "Services"
+    },
+    {
+      "path": "/reviews",
+      "label": "Reviews"
+    },
+    {
+      "path": "/contact",
+      "label": "Contact"
+    }
+  ],
+  "policies": {
+    "terms": "Our terms of service text here.",
+    "privacy": "Our privacy policy text here."
+  },
+  "description": "A trusted tree removal service in Duluth, GA dedicated to professional tree removal and customer service.",
+  "contactInfo": {
+    "address": "2785 Buford Hwy Ste 101-C, Duluth, GA 30096",
+    "phone": "(706) 296-3318",
+    "email": "support@davistreremoval.com"
+  },
+  "hours": {
+    "weekday": "8:30 AM - 6:00 PM",
+    "weekend": "Closed"
+  },
+  "footerLinks": [
+    {
+      "path": "/",
+      "label": "Home"
+    },
+    {
+      "path": "/services",
+      "label": "Services"
+    },
+    {
+      "path": "/reviews",
+      "label": "Reviews"
+    },
+    {
+      "path": "/contact",
+      "label": "Contact"
+    }
+  ],
+  "socialLinks": {
+    "twitter": "https://twitter.com/davistreremoval",
+    "facebook": "https://facebook.com/davistreremoval",
+    "linkedin": "https://linkedin.com/company/davistreremoval",
+    "instagram": "https://instagram.com/davistreremoval"
+  },
+  "showJoinTeamButton": true,
+  "joinTeamText": "Join Our Team",
+  "joinTeamLink": "/careers",
+  "copyright": "© 2024 Davis Tree Removal. All rights reserved.",
+  "footerStyle": {
+    "backgroundColor": "#ffffff",
+    "gradientFromColor": "#ffffff",
+    "gradientToColor": "#f9fafb",
+    "titleColor": "#4f46e5",
+    "textColor": "#4b5563",
+    "linkColor": "#4b5563",
+    "linkHoverColor": "#4f46e5",
+    "socialIconColor": "#4f46e5",
+    "dividerColor": "rgba(79, 70, 229, 0.2)",
+    "quickLinksTitleColor": "#4f46e5",
+    "contactInfoTitleColor": "#4f46e5",
+    "infoTitleColor": "#4f46e5",
+    "joinButtonBgColor": "#4f46e5",
+    "joinButtonTextColor": "#ffffff",
+    "joinButtonHoverBgColor": "#4338ca",
+    "hoursCardBgColor": "rgba(255, 255, 255, 0.6)",
+    "hoursCardTextColor": "#4b5563",
+    "hoursCardValueColor": "#4f46e5",
+    "copyrightTextColor": "#6b7280",
+    "policyLinkColor": "#6b7280",
+    "policyLinkHoverColor": "#4f46e5"
+  },
+  "schedulingButtonText": "Schedule Now",
+  "themeColor": "#a259e6",
+  "_timestamp": "2025-05-12T17:30:01.734Z",
+  "_lastUpdated": "2025-05-12T17:30:02.596Z",
+  "themeLink": "ASDF"
+}

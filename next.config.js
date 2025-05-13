@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
+  reactStrictMode: true,
+  swcMinify: true,
   images: {
-    domains: [
-      'taylorscollision.supabase.co',
-      'lh3.googleusercontent.com'
-    ],
+    domains: ['tailwindui.com', 'images.unsplash.com', 'taylorcollision.com'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -20,6 +20,24 @@ const nextConfig = {
       },
     ],
   },
-}
+  // Enable experimental features needed for dynamic imports
+  experimental: {
+    serverComponentsExternalPackages: [],
+    esmExternals: 'loose',
+  },
+  // Add this to ensure static files are properly handled
+  webpack: (config, { isServer }) => {
+    // Enable filesystem route handlers
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+      };
+    }
+    
+    return config;
+  },
+};
 
-module.exports = nextConfig 
+module.exports = nextConfig;

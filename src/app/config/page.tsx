@@ -1,6 +1,22 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import localConfig from '@/config/localConfig';
+import localConfig from '../../config/localConfig';
+import { useTheme } from './ThemeProvider';
+import { disableReloadWarning } from '../../utils/preventReloadWarning';
+
+// Import the components
+import HeroSectionForm from './components/homepageconfig/HeroSectionForm';
+import EditableGuaranteeCards from './components/homepageconfig/EditableGuaranteeCards';
+import ColorSelectorInput from './components/ColorSelectorInput';
+import NavBarConfig from './components/NavBarConfig';
+import InfoBarConfig from './components/homepageconfig/InfoBarConfig';
+import GuaranteeSection from './components/homepageconfig/GuaranteeSection';
+import ServicesSection from './components/homepageconfig/ServicesSection';
+import ScheduleSection from './components/homepageconfig/ScheduleSection';
+import ServicePageConfig from './components/servicesconfig/ServicePageConfig';
+import ReviewPageConfig from './components/reviewsconfig/ReviewPageConfig';
+import ContactPageConfig from './components/contactconfig/ContactPageConfig';
+import FooterConfig from './components/FooterConfig';
 
 type NavBarConfig = {
   backgroundColor: string;
@@ -16,76 +32,758 @@ type NavBarConfig = {
 };
 
 function getInitialConfig() {
-  // Try to load from localStorage first
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('siteConfig');
-    if (saved) return JSON.parse(saved);
-  }
   return localConfig;
 }
 
+// Toast component
+function Toast({ message, show }: { message: string, show: boolean }) {
+  return (
+    <div
+      className={`fixed bottom-6 right-6 z-50 transition-transform duration-500 ${show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'} bg-purple-700 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2`}
+      style={{ pointerEvents: 'none' }}
+    >
+      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+      <span className="font-semibold">{message}</span>
+    </div>
+  );
+}
+
 export default function ConfigPage() {
-  const [config, setConfig] = useState(localConfig);
+  const [isClientLoaded, setIsClientLoaded] = useState(false);
+  
+  // Use a default theme color that will be replaced by the actual one once client-side code runs
+  const [localThemeColor, setLocalThemeColor] = useState('#a259e6');
+  
+  // Safely try to use the theme context, but provide fallback for SSR
+  let themeContextValue: { themeColor: string; setThemeColor: (color: string) => void } = { 
+    themeColor: localThemeColor, 
+    setThemeColor: (color: string) => setLocalThemeColor(color) 
+  };
+  try {
+    themeContextValue = useTheme();
+  } catch (e) {
+    // During SSR or early rendering, useTheme might fail - we'll use our default values
+    console.log('Theme context not available yet, using default values');
+  }
+  
+  const { themeColor, setThemeColor } = themeContextValue;
+  
+  const [config, setConfig] = useState(getInitialConfig());
   const [history, setHistory] = useState([localConfig]);
+  const [redoHistory, setRedoHistory] = useState<any[]>([]);
+  const [isRestoringFromHistory, setIsRestoringFromHistory] = useState(false);
   const [expandedPage, setExpandedPage] = useState<string | null>(null);
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-  const [navBarExpanded, setNavBarExpanded] = useState(true);
-  const [showSchedule, setShowSchedule] = useState(true);
-  const [showContact, setShowContact] = useState(true);
-  const [showEstimates, setShowEstimates] = useState(true);
-  const [showBadge, setShowBadge] = useState(true);
-  const [showTitle, setShowTitle] = useState(true);
-  const [showLocation, setShowLocation] = useState(true);
-  const [showSubtitle, setShowSubtitle] = useState(true);
-  const [showContent, setShowContent] = useState(true);
-  const [showGradients, setShowGradients] = useState(true);
-  const [showExpertTechs, setShowExpertTechs] = useState(true);
+  const [navBarExpanded, setNavBarExpanded] = useState(false);
+  const [footerExpanded, setFooterExpanded] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [showContact, setShowContact] = useState(false);
+  const [showEstimates, setShowEstimates] = useState(false);
+  const [showBadge, setShowBadge] = useState(false);
+  const [showTitle, setShowTitle] = useState(false);
+  const [showLocation, setShowLocation] = useState(false);
+  const [showSubtitle, setShowSubtitle] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+  const [showGradients, setShowGradients] = useState(false);
+  const [showExpertTechs, setShowExpertTechs] = useState(false);
+  const [showExpertTechs2, setShowExpertTechs2] = useState(false);
+  const [showHeroSection, setShowHeroSection] = useState<{ [key: string]: boolean }>({});
+  const [showScheduleSection, setShowScheduleSection] = useState(false);
+  const [showGuaranteeSection, setShowGuaranteeSection] = useState(false);
+  const [showServicesSection, setShowServicesSection] = useState(false);
+  const [mobilePreview, setMobilePreview] = useState(false);
+  const [splitPosition, setSplitPosition] = useState(35); // Default split at 35% for config panel (was 50%)
+  const [isDragging, setIsDragging] = useState(false);
+  const splitDividerRef = useRef<HTMLDivElement>(null);
 
-  // On mount, load config from localStorage if available
+  // New: Handle Publish to localConfig.ts
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishMessage, setPublishMessage] = useState<string | null>(null);
+  const [publishStatus, setPublishStatus] = useState<'success' | 'error' | null>(null);
+
+  // Toast state
+  const [showToast, setShowToast] = useState(false);
+
+  // New: Current Theme Link
+  const [themeLink, setThemeLink] = useState('');
+
+  // Collapsible Info Bar state
+  const [infoBarExpanded, setInfoBarExpanded] = useState<boolean>(true);
+
+  // Mobile detection for preview
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const configPanelRef = useRef<HTMLDivElement>(null);
+
+  // Add new state for editable header title
+  const [headerTitle, setHeaderTitle] = useState('Site Configuration');
+
+  // Add a new state for instructions modal
+  const [showInstructions, setShowInstructions] = useState(false);
+
+  // Add basic instructions content
+  const instructionsContent = [
+    { title: "Getting Started", content: "Configure your site by adjusting settings in each section. Changes are previewed in real-time on the right." },
+    { title: "Saving Work", content: "Click 'Save' to store your changes locally. Use 'Publish' when you're ready to apply changes to your site." },
+    { title: "Color Scheme", content: "Set your theme color using the color picker in the top header. This will be applied throughout the site." },
+    { title: "Section Configuration", content: "Expand each section to modify specific elements like the Info Bar, Navigation, Footer, and Pages." },
+    { title: "Preview Options", content: "Toggle between Mobile and Desktop views to ensure your site looks great on all devices." }
+  ];
+
+  // Close to the other useRef hooks, add:
+  const prevConfigRef = useRef<typeof config | null>(null);
+
+  // In the useEffect where config changes, add:
   useEffect(() => {
+    // Auto-save config to localStorage whenever it changes
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('siteConfig');
-      if (saved) setConfig(JSON.parse(saved));
+      // Don't auto-save immediately for footerStyle changes
+      const prevConfig = prevConfigRef.current;
+      const isFooterStyleChange = prevConfig && 
+        JSON.stringify(prevConfig.footerStyle) !== JSON.stringify(config.footerStyle);
+      
+      if (!isFooterStyleChange) {
+        localStorage.setItem('siteConfig', JSON.stringify(config));
+        console.log('Auto-saved config to localStorage');
+      }
+      
+      // Update the prevConfig ref for the next change
+      prevConfigRef.current = { ...config };
+    }
+  }, [config, themeColor, isRestoringFromHistory]);
+
+  // Also fix the second instance:
+  useEffect(() => {
+    // Auto-save config to localStorage whenever it changes
+    if (typeof window !== 'undefined') {
+      // Skip immediate auto-save for footer style changes to prevent interrupting the user
+      const prevConfig = prevConfigRef.current;
+      const isFooterStyleChange = prevConfig && 
+        JSON.stringify(prevConfig.footerStyle) !== JSON.stringify(config.footerStyle);
+      
+      if (!isFooterStyleChange) {
+        localStorage.setItem('siteConfig', JSON.stringify(config));
+        console.log('Auto-saved config to localStorage');
+      }
+      
+      // Update the prevConfig ref for the next change
+      prevConfigRef.current = { ...config };
+    }
+  }, [config, themeColor, isRestoringFromHistory]);
+
+  // Add this effect at the beginning of other useEffect blocks
+  useEffect(() => {
+    setIsClientLoaded(true);
+    
+    // Once client-side code is running, try to get the theme color from localStorage
+    const savedThemeColor = localStorage.getItem('themeColor');
+    if (savedThemeColor) {
+      setLocalThemeColor(savedThemeColor);
+      // Only call setThemeColor from context if it's available
+      if (themeContextValue.setThemeColor !== setLocalThemeColor) {
+        setThemeColor(savedThemeColor);
+      }
+    }
+    
+    // Also try to get theme link from localStorage
+    const savedThemeLink = localStorage.getItem('themeLink');
+    if (savedThemeLink) {
+      setThemeLink(savedThemeLink);
     }
   }, []);
 
-  // Undo support (Ctrl+Z) and Save (Ctrl+S), Export (Ctrl+E)
+  // Handle scroll for "back to top" button on mobile
   useEffect(() => {
+    if (!isMobileDevice) return;
+    
+    const handleScroll = () => {
+      if (configPanelRef.current) {
+        setShowBackToTop(configPanelRef.current.scrollTop > 300);
+      }
+    };
+    
+    const configPanel = configPanelRef.current;
+    if (configPanel) {
+      configPanel.addEventListener('scroll', handleScroll);
+    }
+    
+    return () => {
+      if (configPanel) {
+        configPanel.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [isMobileDevice]);
+
+  // Function to scroll back to top
+  const scrollToTop = () => {
+    if (configPanelRef.current) {
+      configPanelRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  // Detect mobile device for preview restriction
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileDevice(window.innerWidth < 768);
+    };
+    
+    // Initial check
+    checkMobile();
+    
+    // Add resize listener to update when orientation changes
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
+
+  // Resizable panel functionality
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      
+      const container = document.getElementById('split-container');
+      if (!container) return;
+      
+      // Apply cursor styling to the body during dragging
+      document.body.style.cursor = 'col-resize';
+      document.body.classList.add('select-none'); // Prevent text selection during resize
+      
+      const containerRect = container.getBoundingClientRect();
+      const newSplitPosition = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+      
+      // Limit the range from 25% to 50%
+      if (newSplitPosition >= 25 && newSplitPosition <= 50) {
+        setSplitPosition(newSplitPosition);
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      // Reset cursor and text selection
+      document.body.style.cursor = '';
+      document.body.classList.remove('select-none');
+    };
+    
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.classList.remove('select-none');
+    };
+  }, [isDragging]);
+
+  const handleDividerMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  // ALWAYS initialize with localConfig
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const initializeConfig = async () => {
+        try {
+          // Try to fetch the latest config from the JSON file first (most current)
+          const response = await fetch('/current-config.json?' + new Date().getTime());
+          if (response.ok) {
+            const latestConfig = await response.json();
+            console.log('Loaded config from JSON file');
+            
+            // Force a purple color theme (in localStorage) if none set
+            if (!localStorage.getItem('themeColor')) {
+              localStorage.setItem('themeColor', '#a259e6');
+            }
+            
+            // Ensure the themeColor is properly loaded too
+            const savedThemeColor = localStorage.getItem('themeColor');
+            if (savedThemeColor) {
+              setThemeColor(savedThemeColor);
+            }
+            
+            // Update all our state variables
+            setConfig(latestConfig);
+            
+            // Save to localStorage with metadata to ensure persistence
+            const configToSave = {
+              ...latestConfig,
+              _timestamp: new Date().toISOString(),
+              _meta: {
+                headerTitle: headerTitle || 'Site Configuration',
+                themeColor: savedThemeColor || themeColor,
+                infoBarExpanded: infoBarExpanded
+              }
+            };
+            
+            localStorage.setItem('siteConfig', JSON.stringify(configToSave));
+            localStorage.setItem('siteConfig_backup', JSON.stringify(configToSave));
+            setHistory([latestConfig]);
+            
+            // Load header title if available
+            const savedTitle = localStorage.getItem('headerTitle');
+            if (savedTitle) {
+              console.log('Loaded header title on initialization:', savedTitle);
+              setHeaderTitle(savedTitle);
+            }
+            
+            return;
+          }
+        } catch (error) {
+          console.log('Could not load config from JSON file, falling back to localStorage or default');
+        }
+        
+        // ENHANCED RECOVERY: Check multiple storage locations
+        let parsedConfig = null;
+        let source = '';
+        
+        // Try main localStorage item first
+        const savedConfig = localStorage.getItem('siteConfig');
+        if (savedConfig) {
+          try {
+            parsedConfig = JSON.parse(savedConfig);
+            source = 'primary localStorage';
+          } catch (e) {
+            console.log('Primary localStorage config corrupt, trying backup');
+          }
+        }
+        
+        // If that fails, try the backup localStorage
+        if (!parsedConfig) {
+          const backupConfig = localStorage.getItem('siteConfig_backup');
+          if (backupConfig) {
+            try {
+              parsedConfig = JSON.parse(backupConfig);
+              source = 'backup localStorage';
+            } catch (e) {
+              console.log('Backup localStorage config corrupt, trying sessionStorage');
+            }
+          }
+        }
+        
+        // If both localStorage options fail, try sessionStorage
+        if (!parsedConfig) {
+          const emergencyConfig = sessionStorage.getItem('siteConfig_emergency');
+          if (emergencyConfig) {
+            try {
+              parsedConfig = JSON.parse(emergencyConfig);
+              source = 'sessionStorage emergency backup';
+            } catch (e) {
+              console.log('All stored configs corrupt, using default');
+            }
+          }
+        }
+        
+        // If we found a valid config, use it
+        if (parsedConfig) {
+          console.log(`Loaded config from ${source}`);
+          
+          // Load any metadata if available
+          if (parsedConfig._meta) {
+            console.log('Found metadata in saved config:', parsedConfig._meta);
+            
+            // Restore headerTitle from metadata
+            if (parsedConfig._meta.headerTitle) {
+              setHeaderTitle(parsedConfig._meta.headerTitle);
+              localStorage.setItem('headerTitle', parsedConfig._meta.headerTitle);
+              console.log('Restored headerTitle from config metadata:', parsedConfig._meta.headerTitle);
+            }
+            
+            // Restore theme color from metadata
+            if (parsedConfig._meta.themeColor) {
+              setThemeColor(parsedConfig._meta.themeColor);
+              localStorage.setItem('themeColor', parsedConfig._meta.themeColor);
+            }
+            
+            // Restore theme link from metadata
+            if (parsedConfig._meta.themeLink) {
+              setThemeLink(parsedConfig._meta.themeLink);
+              localStorage.setItem('themeLink', parsedConfig._meta.themeLink);
+              console.log('Restored themeLink from config metadata:', parsedConfig._meta.themeLink);
+            }
+            
+            // Restore infoBarExpanded state from metadata
+            if (parsedConfig._meta.infoBarExpanded !== undefined) {
+              setInfoBarExpanded(parsedConfig._meta.infoBarExpanded);
+              localStorage.setItem('infoBarExpanded', parsedConfig._meta.infoBarExpanded.toString());
+            }
+            
+            // Remove metadata before setting config to avoid UI confusion
+            const { _meta, _timestamp, ...configWithoutMeta } = parsedConfig;
+            setConfig(configWithoutMeta);
+            setHistory([configWithoutMeta]);
+          } else {
+            // No metadata, just use the parsed config
+            setConfig(parsedConfig);
+            setHistory([parsedConfig]);
+            
+            // Try to get header title from localStorage as fallback
+            const savedTitle = localStorage.getItem('headerTitle');
+            if (savedTitle) {
+              setHeaderTitle(savedTitle);
+            }
+            
+            // Try to get theme color from localStorage as fallback
+            const savedThemeColor = localStorage.getItem('themeColor');
+            if (savedThemeColor) {
+              setThemeColor(savedThemeColor);
+            }
+          }
+          
+          // Ensure all backups are in sync
+          localStorage.setItem('siteConfig', JSON.stringify(parsedConfig));
+          localStorage.setItem('siteConfig_backup', JSON.stringify(parsedConfig));
+          sessionStorage.setItem('siteConfig_emergency', JSON.stringify(parsedConfig));
+        } else {
+          // Reset to default
+          localStorage.setItem('siteConfig', JSON.stringify({
+            ...localConfig,
+            _meta: {
+              headerTitle: 'Site Configuration',
+              themeColor: '#a259e6',
+              themeLink: '',
+              infoBarExpanded: true
+            }
+          }));
+          localStorage.setItem('siteConfig_backup', JSON.stringify({
+            ...localConfig,
+            _meta: {
+              headerTitle: 'Site Configuration',
+              themeColor: '#a259e6',
+              themeLink: '',
+              infoBarExpanded: true
+            }
+          }));
+          setConfig(localConfig);
+          setHistory([localConfig]);
+          console.log('Reset to default config due to no valid saved config found');
+        }
+      };
+      
+      initializeConfig();
+    }
+  }, []);
+
+  // Add debug logging for save functionality
+  useEffect(() => {
+    console.log("Save effect initialized");
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+      console.log(`Key pressed: ${e.key}, ctrlKey: ${e.ctrlKey}, metaKey: ${e.metaKey}`);
+      
+      // Handle Ctrl+Z / Cmd+Z (undo)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
         e.preventDefault();
+        console.log("Undo triggered");
+        
         if (history.length > 1) {
-          setHistory(h => {
-            const newHistory = h.slice(0, -1);
-            setConfig(newHistory[newHistory.length - 1]);
-            return newHistory;
-          });
+          // Get the previous state with proper typing
+          const previousConfig: any = history[history.length - 2];
+          
+          // Set flag to prevent re-adding this change to history
+          setIsRestoringFromHistory(true);
+          
+          // Save current state to redo history
+          const currentConfig = history[history.length - 1];
+          setRedoHistory(prev => [...prev, currentConfig]);
+          
+          // Restore the previous config state
+          setConfig(previousConfig);
+          
+          // Also restore theme color and theme link if present
+          if (previousConfig.themeColor) {
+            setThemeColor(previousConfig.themeColor);
+          }
+          
+          if (previousConfig.themeLink) {
+            setThemeLink(previousConfig.themeLink);
+          }
+          
+          // Update the history array to remove the current state
+          setHistory(prev => prev.slice(0, -1));
+          
+          // Show a notification
+          setShowToast(false);
+          setTimeout(() => {
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 2000);
+          }, 10);
         }
       }
-      // Ctrl+S/Cmd+S to save
+      
+      // Handle Ctrl+Shift+Z / Cmd+Shift+Z (redo)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        console.log("Redo triggered");
+        
+        if (redoHistory.length > 0) {
+          // Get the last item from redo history
+          const redoConfig = redoHistory[redoHistory.length - 1];
+          
+          // Set flag to prevent adding this change back to history
+          setIsRestoringFromHistory(true);
+          
+          // Restore the redo config state
+          setConfig(redoConfig);
+          
+          // Also restore theme color and theme link if present
+          if (redoConfig.themeColor) {
+            setThemeColor(redoConfig.themeColor);
+          }
+          
+          if (redoConfig.themeLink) {
+            setThemeLink(redoConfig.themeLink);
+          }
+          
+          // Add the redo state back to history
+          setHistory(prev => [...prev, redoConfig]);
+          
+          // Remove the used redo state
+          setRedoHistory(prev => prev.slice(0, -1));
+          
+          // Show a notification
+          setShowToast(false);
+          setTimeout(() => {
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 2000);
+          }, 10);
+        }
+      }
+      
+      // Ctrl+S/Cmd+S to save - this might be getting blocked
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
-        handleSave();
+        console.log("Save shortcut detected - attempting to save...");
+        
+        // Inline save functionality instead of calling handleSave()
+        try {
+          console.log('Save shortcut triggered at', new Date().toISOString());
+          
+          // Create a complete config object that includes all necessary data
+          const completeConfig = {
+            ...config,
+            _timestamp: new Date().toISOString(),
+            _meta: {
+              headerTitle: headerTitle,
+              themeColor: themeColor,
+              infoBarExpanded: infoBarExpanded
+            }
+          };
+          
+          // Save to multiple locations for redundancy
+          localStorage.setItem('siteConfig', JSON.stringify(completeConfig));
+          localStorage.setItem('siteConfig_backup', JSON.stringify(completeConfig));
+          sessionStorage.setItem('siteConfig_emergency', JSON.stringify(completeConfig));
+          
+          // Also save individual settings for redundancy
+          localStorage.setItem('themeColor', themeColor);
+          localStorage.setItem('infoBarExpanded', infoBarExpanded.toString());
+          localStorage.setItem('headerTitle', headerTitle);
+          
+          // Show notification
+          setShowToast(false);
+          setTimeout(() => {
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 2000);
+          }, 10);
+        } catch (error) {
+          console.error('Error saving:', error);
+          alert('Failed to save: ' + (error instanceof Error ? error.message : String(error)));
+        }
       }
+      
       // Ctrl+E/Cmd+E to export
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'e') {
         e.preventDefault();
-        handleExport();
+        console.log("Export triggered");
+        
+        // Inline export functionality instead of calling handleExport()
+        const dataStr = JSON.stringify(config, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'siteConfig.json';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
       }
     };
+    
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [history, config]);
+  }, [history, config, themeColor, redoHistory]);
 
   // Push to history on config change
   useEffect(() => {
-    setHistory(h => (h[h.length - 1] !== config ? [...h, config] : h));
-  }, [config]);
+    // Only add to history if not restoring from history
+    if (!isRestoringFromHistory) {
+      setHistory(h => {
+        if (h[h.length - 1] !== config) {
+          // Clear redo history when a new change is made
+          setRedoHistory([]);
+          return [...h, config];
+        }
+        return h;
+      });
+    } else {
+      // Reset the flag
+      setIsRestoringFromHistory(false);
+    }
+    
+    // Continue with existing code for iframe updates
+    // Send updates to the preview iframe when config changes
+    const previewIframes = document.querySelectorAll('iframe');
+    previewIframes.forEach(iframe => {
+      if (iframe && iframe.contentWindow) {
+        try {
+          // Update sessionStorage first for future iframe loads
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('previewConfig', JSON.stringify({
+              ...config,
+              themeColor
+            }));
+          }
+          
+          // Post a message to any already loaded iframes
+          iframe.contentWindow.postMessage({
+            type: 'configUpdate',
+            config: {
+              ...config,
+              themeColor
+            },
+            themeColor
+          }, '*');
+        } catch (error) {
+          console.error('Error sending config to preview:', error);
+        }
+      }
+    });
+    
+    // Auto-save config to localStorage whenever it changes
+    if (typeof window !== 'undefined') {
+      // Don't auto-save immediately for footerStyle changes
+      const prevConfig = prevConfigRef.current;
+      const isFooterStyleChange = prevConfig && 
+        JSON.stringify(prevConfig.footerStyle) !== JSON.stringify(config.footerStyle);
+      
+      if (!isFooterStyleChange) {
+        localStorage.setItem('siteConfig', JSON.stringify(config));
+        console.log('Auto-saved config to localStorage');
+      }
+      
+      // Update the prevConfig ref for the next change
+      prevConfigRef.current = { ...config };
+    }
+  }, [config, themeColor, isRestoringFromHistory]);
+
+  // Set up periodic auto-save
+  useEffect(() => {
+    // Auto-save every 30 seconds instead of 10 seconds
+    const autoSaveInterval = setInterval(() => {
+      if (typeof window !== 'undefined') {
+        // Create a complete config object that includes all necessary data
+        const completeConfig = {
+          ...config,
+          _timestamp: new Date().toISOString(),
+          themeColor: themeColor,
+          themeLink: themeLink,
+          _meta: {
+            headerTitle: headerTitle,
+            themeColor: themeColor,
+            themeLink: themeLink,
+            infoBarExpanded: infoBarExpanded
+          }
+        };
+        
+        // Save to localStorage
+        localStorage.setItem('siteConfig', JSON.stringify(completeConfig));
+        
+        // Also save a backup copy
+        localStorage.setItem('siteConfig_backup', JSON.stringify(completeConfig));
+        
+        // Also save individual settings for redundancy
+        localStorage.setItem('headerTitle', headerTitle);
+        localStorage.setItem('themeColor', themeColor);
+        localStorage.setItem('themeLink', themeLink);
+        localStorage.setItem('infoBarExpanded', infoBarExpanded.toString());
+        console.log('Auto-saved all config data at ' + new Date().toISOString());
+      }
+    }, 30000); // Every 30 seconds instead of 10
+    
+    return () => {
+      clearInterval(autoSaveInterval);
+    };
+  }, [config, headerTitle, themeColor, themeLink, infoBarExpanded]);
 
   // Save to localStorage
   const handleSave = () => {
-    localStorage.setItem('siteConfig', JSON.stringify(config));
-    alert('Config saved locally!');
+    try {
+      console.log('handleSave function triggered at', new Date().toISOString());
+      
+      // Create a complete config object that includes all necessary data
+      const completeConfig = {
+        ...config,
+        _timestamp: new Date().toISOString(),
+        _meta: {
+          headerTitle: headerTitle,
+          themeColor: themeColor,
+          infoBarExpanded: infoBarExpanded
+        }
+      };
+      
+      console.log('Saving config with meta:', completeConfig._meta);
+      
+      // Save to multiple locations for redundancy
+      localStorage.setItem('siteConfig', JSON.stringify(completeConfig));
+      localStorage.setItem('siteConfig_backup', JSON.stringify(completeConfig));
+      sessionStorage.setItem('siteConfig_emergency', JSON.stringify(completeConfig));
+      
+      console.log('Config saved to storage');
+      
+      // Also save individual settings for redundancy
+      localStorage.setItem('themeColor', themeColor);
+      localStorage.setItem('infoBarExpanded', infoBarExpanded.toString());
+      localStorage.setItem('headerTitle', headerTitle);
+      console.log('All individual settings saved, headerTitle:', headerTitle);
+      
+      // Dispatch event to notify components that config has been updated
+      if (typeof window !== 'undefined') {
+        // Standard config loaded event
+        const configLoadedEvent = new Event('config-loaded');
+        document.dispatchEvent(configLoadedEvent);
+        
+        // Create a custom event with the full config data
+        const saveEvent = new CustomEvent('config-saved', { 
+          detail: { config: completeConfig } 
+        });
+        document.dispatchEvent(saveEvent);
+        
+        console.log('Dispatched config events');
+      }
+      
+      // Force update the toast state variables to ensure they update
+      setShowToast(false);
+      setTimeout(() => {
+        setShowToast(true);
+        console.log('Toast shown');
+        setTimeout(() => setShowToast(false), 2000);
+      }, 10);
+      
+      return true;
+    } catch (error) {
+      console.error('Error in handleSave:', error);
+      alert('Failed to save. Error: ' + (error instanceof Error ? error.message : String(error)));
+      return false;
+    }
   };
 
   // Reset to default
@@ -111,17 +809,6 @@ export default function ConfigPage() {
     }
     temp[path[path.length - 1]] = value;
     return obj;
-  }
-
-  // Helper to render color picker
-  function ColorInput({ label, value, onChange }: { label: string, value: string, onChange: (v: string) => void }) {
-    return (
-      <div className="flex items-center gap-2 mb-2">
-        <label className="font-semibold text-primary-700 mr-2">{label}:</label>
-        <input type="color" value={value} onChange={e => onChange(e.target.value)} className="w-8 h-8 border rounded" />
-        <span className="ml-2 text-xs">{value}</span>
-      </div>
-    );
   }
 
   // Helper to render image uploader
@@ -300,6 +987,7 @@ export default function ConfigPage() {
                   newServices[i].description = e.target.value;
                   onChange(newServices);
                 }}
+                placeholder="Card Description"
               />
               <button className="text-xs text-red-500 mt-1" onClick={() => onChange(services.filter((_, idx) => idx !== i))}>Remove</button>
             </li>
@@ -341,951 +1029,1449 @@ export default function ConfigPage() {
     }
   };
 
-  // Editable form for hero section (example for Home page, can be reused for others)
-  function HeroSectionForm({ page, setPage }: { page: any, setPage: (v: any) => void }) {
-    return (
-      <div className="mb-4">
-        <div className="mb-2 flex items-center gap-4">
-          <label className="font-semibold text-primary-700 mr-2">Hero Image:</label>
-          {page.heroImage ? (
-            <img
-              src={`/images/${page.heroImage}`}
-              alt="Hero Image Preview"
-              className="h-10 w-auto rounded shadow border border-gray-200"
-              onError={e => (e.currentTarget.src = 'https://via.placeholder.com/80x40?text=No+Image')}
-            />
-          ) : (
-            <img
-              src={'https://via.placeholder.com/80x40?text=No+Image'}
-              alt="No Hero Image"
-              className="h-10 w-auto rounded shadow border border-gray-200"
-            />
-          )}
-          <input
-            type="text"
-            className="ml-2 px-2 py-1 border rounded"
-            value={page.heroImage || ''}
-            onChange={e => {
-              let val = e.target.value.trim();
-              if (val.startsWith('/images/')) val = val.slice(8);
-              setPage({ ...page, heroImage: val });
-            }}
-            placeholder="e.g. blue.png"
-          />
-          <button
-            type="button"
-            className="ml-2 px-2 py-1 bg-gray-200 rounded text-xs"
-            onClick={() => setPage({ ...page, heroImage: '' })}
-          >Remove</button>
-        </div>
-        <div className="mb-6 bg-pink-50 border-2 border-pink-200 rounded-xl shadow-lg p-4">
-          <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowBadge(v => !v)}>
-            <span className="text-xl font-extrabold text-pink-800">Hero Badge</span>
-            <span className={`transform transition-transform duration-200 ${showBadge ? 'rotate-180' : ''}`}>▼</span>
-          </button>
-          {showBadge && (
-            <div className="pl-2 pt-2 flex flex-col gap-4">
-              <input className="w-full font-semibold text-primary-600 bg-transparent border-b border-primary-200 focus:outline-none mb-2" value={page.badge || ''} onChange={e => setPage({ ...page, badge: e.target.value })} placeholder="Badge" />
-              <div className="flex items-center gap-4">
-                <input type="color" value={page.heroBadgeColor || '#1787c9'} onChange={e => setPage({ ...page, heroBadgeColor: e.target.value })} className="w-10 h-10 border rounded" />
-                <input type="text" value={page.heroBadgeColor || '#1787c9'} onChange={e => setPage({ ...page, heroBadgeColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={9} placeholder="#1787c9" />
-              </div>
-              <div className="flex items-center gap-4 mt-2">
-                <label className="text-sm font-medium text-primary-700">Badge Text Color:</label>
-                <input type="color" value={page.heroBadgeTitleColor || '#fff'} onChange={e => setPage({ ...page, heroBadgeTitleColor: e.target.value })} className="w-10 h-10 border rounded" />
-                <input type="text" value={page.heroBadgeTitleColor || '#fff'} onChange={e => setPage({ ...page, heroBadgeTitleColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="mb-6 bg-purple-50 border-2 border-purple-200 rounded-xl shadow-lg p-4">
-          <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowTitle(v => !v)}>
-            <span className="text-xl font-extrabold text-purple-800">Hero Title</span>
-            <span className={`transform transition-transform duration-200 ${showTitle ? 'rotate-180' : ''}`}>▼</span>
-          </button>
-          {showTitle && (
-            <div className="pl-2 pt-2 flex flex-col gap-4">
-              <input className="w-full font-semibold text-primary-600 bg-transparent border-b border-primary-200 focus:outline-none mb-2" value={page.title || ''} onChange={e => setPage({ ...page, title: e.target.value })} placeholder="Title" />
-              <div className="flex items-center gap-4">
-                <input type="color" value={page.heroTitleColor || '#fff'} onChange={e => setPage({ ...page, heroTitleColor: e.target.value })} className="w-10 h-10 border rounded" />
-                <input type="text" value={page.heroTitleColor || '#fff'} onChange={e => setPage({ ...page, heroTitleColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="mb-6 bg-cyan-50 border-2 border-cyan-200 rounded-xl shadow-lg p-4">
-          <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowLocation(v => !v)}>
-            <span className="text-xl font-extrabold text-cyan-800">Hero Location</span>
-            <span className={`transform transition-transform duration-200 ${showLocation ? 'rotate-180' : ''}`}>▼</span>
-          </button>
-          {showLocation && (
-            <div className="pl-2 pt-2 flex flex-col gap-4">
-              <input className="w-full font-semibold text-primary-600 bg-transparent border-b border-primary-200 focus:outline-none mb-2" value={page.location || ''} onChange={e => setPage({ ...page, location: e.target.value })} placeholder="Location" />
-              <div className="flex items-center gap-4">
-                <input type="color" value={page.heroLocationColor || '#38bdf8'} onChange={e => setPage({ ...page, heroLocationColor: e.target.value })} className="w-10 h-10 border rounded" />
-                <input type="text" value={page.heroLocationColor || '#38bdf8'} onChange={e => setPage({ ...page, heroLocationColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#38bdf8" />
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="mb-6 bg-fuchsia-50 border-2 border-fuchsia-200 rounded-xl shadow-lg p-4">
-          <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowSubtitle(v => !v)}>
-            <span className="text-xl font-extrabold text-fuchsia-800">Hero Subtitle</span>
-            <span className={`transform transition-transform duration-200 ${showSubtitle ? 'rotate-180' : ''}`}>▼</span>
-          </button>
-          {showSubtitle && (
-            <div className="pl-2 pt-2 flex flex-col gap-4">
-              <input className="w-full font-semibold text-primary-600 bg-transparent border-b border-primary-200 focus:outline-none mb-2" value={page.subtitle2 || ''} onChange={e => setPage({ ...page, subtitle2: e.target.value })} placeholder="Subtitle" />
-              <div className="flex items-center gap-4">
-                <input type="color" value={page.heroSubtitleColor || '#fff'} onChange={e => setPage({ ...page, heroSubtitleColor: e.target.value })} className="w-10 h-10 border rounded" />
-                <input type="text" value={page.heroSubtitleColor || '#fff'} onChange={e => setPage({ ...page, heroSubtitleColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-xl shadow-lg p-4">
-          <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowContent(v => !v)}>
-            <span className="text-xl font-extrabold text-blue-800">Hero Content</span>
-            <span className={`transform transition-transform duration-200 ${showContent ? 'rotate-180' : ''}`}>▼</span>
-          </button>
-          {showContent && (
-            <div className="pl-2 pt-2 flex flex-col gap-4">
-              <textarea className="w-full text-primary-600 bg-transparent border-b border-primary-200 focus:outline-none mb-2" value={page.content || ''} onChange={e => setPage({ ...page, content: e.target.value })} placeholder="Content" />
-              <div className="flex items-center gap-4">
-                <input type="color" value={page.heroContentColor || '#fff'} onChange={e => setPage({ ...page, heroContentColor: e.target.value })} className="w-10 h-10 border rounded" />
-                <input type="text" value={page.heroContentColor || '#fff'} onChange={e => setPage({ ...page, heroContentColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="mb-6 bg-indigo-50 border-2 border-indigo-200 rounded-xl shadow-lg p-4">
-          <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowGradients(v => !v)}>
-            <span className="text-xl font-extrabold text-indigo-800">Hero Gradients</span>
-            <span className={`transform transition-transform duration-200 ${showGradients ? 'rotate-180' : ''}`}>▼</span>
-          </button>
-          {showGradients && (
-            <div className="pl-2 pt-2 flex flex-col gap-4">
-              <div className="flex items-center gap-4">
-                <label className="w-32">Top:</label>
-                <input type="color" value={page.heroGradientTop || '#2563eb'} onChange={e => setPage({ ...page, heroGradientTop: e.target.value })} className="w-10 h-10 border rounded" />
-                <input type="text" value={page.heroGradientTop || '#2563eb'} onChange={e => setPage({ ...page, heroGradientTop: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#2563eb" />
-              </div>
-              <div className="flex items-center gap-4">
-                <label className="w-32">Middle:</label>
-                <input type="color" value={page.heroGradientMiddle || '#1d4ed8'} onChange={e => setPage({ ...page, heroGradientMiddle: e.target.value })} className="w-10 h-10 border rounded" />
-                <input type="text" value={page.heroGradientMiddle || '#1d4ed8'} onChange={e => setPage({ ...page, heroGradientMiddle: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#1d4ed8" />
-              </div>
-              <div className="flex items-center gap-4">
-                <label className="w-32">Bottom:</label>
-                <input type="color" value={page.heroGradientBottom || '#1e293b'} onChange={e => setPage({ ...page, heroGradientBottom: e.target.value })} className="w-10 h-10 border rounded" />
-                <input type="text" value={page.heroGradientBottom || '#1e293b'} onChange={e => setPage({ ...page, heroGradientBottom: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#1e293b" />
-              </div>
-              <div className="flex items-center gap-4">
-                <label className="w-32">Left:</label>
-                <input type="color" value={page.heroGradientLeft || '#1e293b'} onChange={e => setPage({ ...page, heroGradientLeft: e.target.value })} className="w-10 h-10 border rounded" />
-                <input type="text" value={page.heroGradientLeft || '#1e293b'} onChange={e => setPage({ ...page, heroGradientLeft: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#1e293b" />
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   // Helper to export config as JSON file
   const handleExport = () => {
     const dataStr = JSON.stringify(config, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'localConfig.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'siteConfig.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   };
 
-  // Add this helper component above the return statement:
-  function EditableGuaranteeCards({ cards, onChange }: { cards: any[], onChange: (v: any[]) => void }) {
-    return (
-      <div>
-        <strong className="block mb-2">Guarantee Cards</strong>
-        <div className="space-y-4">
-          {cards.map((card, i) => {
-            return (
-            <div key={i} className="flex flex-col md:flex-row items-center gap-4 bg-white border border-yellow-200 rounded p-3">
-              <div className="flex flex-col items-center">
-                {card.icon ? (
-                  <img
-                    src={`/images/${card.icon}`}
-                    alt="icon preview"
-                    className="h-10 w-10 mb-1 border border-gray-200 rounded"
-                    onError={e => (e.currentTarget.src = 'https://via.placeholder.com/40x40?text=No+Icon')}
-                  />
-                ) : (
-                  <img
-                    src={'https://via.placeholder.com/40x40?text=No+Icon'}
-                    alt="No Icon"
-                    className="h-10 w-10 mb-1 border border-gray-200 rounded"
-                  />
-                )}
-                <input
-                  type="text"
-                  className="mt-1 px-2 py-1 border rounded w-28"
-                  value={card.icon || ''}
-                  onChange={e => {
-                    const newCards = [...cards];
-                    newCards[i].icon = e.target.value;
-                    onChange(newCards);
-                  }}
-                  placeholder="e.g. warranty.png"
-                />
-              </div>
-              <input
-                className="font-semibold text-yellow-900 bg-transparent border-b border-yellow-300 focus:outline-none flex-1"
-                value={card.title || ''}
-                onChange={e => {
-                  const newCards = [...cards];
-                  newCards[i].title = e.target.value;
-                  onChange(newCards);
-                }}
-                placeholder="Card Title"
-              />
-              <input
-                className="text-yellow-800 bg-transparent border-b border-yellow-200 focus:outline-none flex-1"
-                value={card.description || ''}
-                onChange={e => {
-                  const newCards = [...cards];
-                  newCards[i].description = e.target.value;
-                  onChange(newCards);
-                }}
-                placeholder="Card Description"
-              />
-              <button
-                className="text-xs text-red-500 px-2 py-1 border border-red-200 rounded hover:bg-red-50"
-                onClick={() => onChange(cards.filter((_, idx) => idx !== i))}
-              >Remove</button>
-            </div>
-            );
-          })}
-          <button
-            className="mt-2 px-4 py-2 bg-yellow-200 text-yellow-900 rounded shadow font-bold hover:bg-yellow-300"
-            onClick={() => onChange([...cards, { icon: '', title: '', description: '' }])}
-          >Add Guarantee Card</button>
-        </div>
-      </div>
-    );
-  }
+  // New: Handle Publish to localConfig.ts
+  const handlePublish = async () => {
+    try {
+      setIsPublishing(true);
+      setPublishMessage(null);
+      
+      // Dispatch event to indicate publishing has started
+      document.dispatchEvent(new CustomEvent('publishing-started'));
+      
+      // Disable reload warnings before publishing to prevent interruptions
+      disableReloadWarning();
+      
+      // Ensure we have the latest themeColor and themeLink
+      const savedThemeColor = localStorage.getItem('themeColor');
+      const savedThemeLink = localStorage.getItem('themeLink');
+      
+      if (savedThemeColor) {
+        setThemeColor(savedThemeColor);
+      }
+      
+      if (savedThemeLink) {
+        setThemeLink(savedThemeLink);
+      }
+      
+      // Save themeColor and themeLink to the config object directly
+      const updatedConfig = {
+        ...config,
+        themeColor: savedThemeColor || themeColor,
+        themeLink: savedThemeLink || themeLink,
+        _timestamp: new Date().toISOString() // Add a timestamp to force updates
+      };
+      
+      // First, save to localStorage to ensure we have the latest config
+      localStorage.setItem('siteConfig', JSON.stringify(updatedConfig));
+      localStorage.setItem('themeColor', themeColor); // Save theme explicitly too
+      localStorage.setItem('themeLink', themeLink); // Save theme link explicitly too
+      
+      console.log("Publishing with themeColor:", updatedConfig.themeColor);
+      console.log("Publishing with themeLink:", updatedConfig.themeLink);
+      
+      // Send the config to the API endpoint to update localConfig.ts
+      const response = await fetch('/api/publish-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedConfig),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setPublishStatus('success');
+        setPublishMessage('Configuration published successfully! The changes are now in your code.');
+        
+        // Update localStorage with timestamp from server for cache-busting
+        if (result.timestamp) {
+          updatedConfig._timestamp = result.timestamp;
+          localStorage.setItem('siteConfig', JSON.stringify(updatedConfig));
+        }
+        
+        // Dispatch comprehensive events to trigger config refresh across the app
+        
+        // 1. Standard event for basic notification
+        document.dispatchEvent(new Event('config-published'));
+        
+        // 2. Custom event with full config data for components that need it
+        const publishEvent = new CustomEvent('config-full-update', {
+          detail: { 
+            config: updatedConfig,
+            themeColor: themeColor,
+            timestamp: result.timestamp || new Date().toISOString()
+          }
+        });
+        document.dispatchEvent(publishEvent);
+        
+        // 3. Specific footer update event to ensure footer receives changes
+        const footerUpdateEvent = new CustomEvent('footer-config-updated', {
+          detail: {
+            config: updatedConfig
+          }
+        });
+        document.dispatchEvent(footerUpdateEvent);
+        
+        console.log('Dispatched all config update events');
+        
+        // Show a success toast
+        setShowToast(false);
+        setTimeout(() => {
+          setShowToast(true);
+          console.log('Toast shown');
+          setTimeout(() => setShowToast(false), 2000);
+        }, 10);
+      } else {
+        setPublishStatus('error');
+        setPublishMessage(`Failed to publish: ${result.message}`);
+      }
+    } catch (error) {
+      setPublishStatus('error');
+      setPublishMessage(`Error publishing configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsPublishing(false);
+      
+      // Clear message after 5 seconds
+      setTimeout(() => {
+        setPublishMessage(null);
+        setPublishStatus(null);
+      }, 5000);
+    }
+  };
 
+  // Load theme link from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedLink = localStorage.getItem('themeLink');
+      if (savedLink) setThemeLink(savedLink);
+    }
+  }, []);
+
+  // Save theme link and color to localStorage when changed
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('themeLink', themeLink);
+      localStorage.setItem('infoBarExpanded', infoBarExpanded.toString());
+    }
+  }, [themeLink, infoBarExpanded]);
+
+  // Update infoBarExpanded from localStorage on client-side only
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('infoBarExpanded');
+      if (saved !== null) {
+        setInfoBarExpanded(saved === 'true');
+      }
+    }
+  }, []);
+
+  // Load header title from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedHeaderTitle = localStorage.getItem('headerTitle');
+      if (savedHeaderTitle) {
+        setHeaderTitle(savedHeaderTitle);
+        console.log('Loaded header title from localStorage:', savedHeaderTitle);
+      }
+    }
+  }, []);
+
+  // Save header title to localStorage when changed
+  useEffect(() => {
+    if (typeof window !== 'undefined' && headerTitle) {
+      localStorage.setItem('headerTitle', headerTitle);
+      console.log('Saved header title to localStorage:', headerTitle);
+    }
+  }, [headerTitle]);
+
+  // Add data-config-page attribute
   useEffect(() => {
     document.body.setAttribute('data-config-page', 'true');
+    
+    // Force all rotation states to be consistent with server rendering on initial client render
+    // This helps prevent hydration mismatches
+    setNavBarExpanded(false);
+    setFooterExpanded(false);
+    setShowHeroSection({});
+    setShowScheduleSection(false);
+    setShowGuaranteeSection(false);
+    setShowServicesSection(false);
+    
+    // Add beforeunload event listener to save headerTitle before page refresh
+    const handleBeforeUnload = () => {
+      if (headerTitle) {
+        localStorage.setItem('headerTitle', headerTitle);
+        console.log('Saved header title before unload:', headerTitle);
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
     return () => {
       document.body.removeAttribute('data-config-page');
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [headerTitle]);
+
+  // Helper to apply theme color to className or style
+  const themed = (defaultClass: string, colorClass?: string) =>
+    colorClass ? `${defaultClass} ${colorClass}` : defaultClass;
+
+  // Apply styles to dropdown icons after initial render to avoid hydration mismatch
+  useEffect(() => {
+    // Info Bar dropdown
+    const infoBarDropdownIcon = document.querySelector('.info-bar-dropdown-icon');
+    if (infoBarDropdownIcon && infoBarExpanded) {
+      infoBarDropdownIcon.classList.add('rotate-180');
+    }
+
+    // Page section dropdowns
+    const pageDropdownIcons = document.querySelectorAll('.page-dropdown-icon');
+    pageDropdownIcons.forEach((icon, index) => {
+      // Only rotate if the corresponding page is expanded
+      const pageKeys = ['Home', 'Services', 'Reviews', 'Contact', ...Object.keys(config.pages || {}).filter(key => !['Home', 'Services', 'Reviews', 'Contact'].includes(key))];
+      if (expandedPage === pageKeys[index]) {
+        icon.querySelector('.dropdown-arrow')?.classList.add('rotate-180');
+      }
+    });
+
+    // Hero section dropdowns
+    Object.keys(showHeroSection).forEach(key => {
+      const heroIcon = document.querySelector(`.hero-section-icon[data-page="${key}"]`);
+      if (heroIcon && showHeroSection[key]) {
+        heroIcon.querySelector('.dropdown-arrow')?.classList.add('rotate-180');
+      }
+    });
+  }, [infoBarExpanded, expandedPage, config.pages, showHeroSection]);
+
+  // Add beforeunload event listener to ensure saving on page close
+  useEffect(() => {
+    // Flag to track if we're in the publishing process
+    let isPublishingInProgress = false;
+    
+    // Set up a custom event listener to disable warnings during publishing
+    const handlePublishStart = () => {
+      isPublishingInProgress = true;
+      // Reset after 5 seconds (longer than typical publish time)
+      setTimeout(() => {
+        isPublishingInProgress = false;
+      }, 5000);
+    };
+    
+    // Listen for our custom publishing event
+    document.addEventListener('publishing-started', handlePublishStart);
+    
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Skip the warning if we're in the publishing process
+      if (isPublishingInProgress) {
+        return undefined;
+      }
+      
+      // Force a full save to ensure nothing is lost
+      const completeConfig = {
+        ...config,
+        _meta: {
+          headerTitle,
+          themeColor,
+          infoBarExpanded,
+          _lastSaved: new Date().toISOString()
+        }
+      };
+      
+      localStorage.setItem('siteConfig', JSON.stringify(completeConfig));
+      localStorage.setItem('headerTitle', headerTitle);
+      localStorage.setItem('themeColor', themeColor);
+      localStorage.setItem('infoBarExpanded', infoBarExpanded.toString());
+      console.log('Emergency save completed on page close');
+      
+      // Show a warning if they try to leave
+      e.preventDefault();
+      e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+      return e.returnValue;
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('publishing-started', handlePublishStart);
+    };
+  }, [config, headerTitle, themeColor, infoBarExpanded as boolean]);
+
+  // Set up periodic auto-save
+  useEffect(() => {
+    // Auto-save every 30 seconds (less aggressive than 5)
+    const saveInterval = setInterval(() => {
+      if (typeof window !== 'undefined') {
+        try {
+          // Save the latest config
+          localStorage.setItem('siteConfig', JSON.stringify(config));
+          localStorage.setItem('siteConfig_backup', JSON.stringify(config));
+          
+          // Dispatch a custom event for components that need to know about config changes
+          const configEvent = new CustomEvent('config-autosaved', { 
+            detail: { 
+              timestamp: new Date().toISOString(),
+              source: 'auto-save interval'
+            } 
+          });
+          document.dispatchEvent(configEvent);
+          
+          console.log('Auto-saved all config data at ' + new Date().toISOString());
+        } catch (error) {
+          console.error('Error in auto-save interval:', error);
+        }
+      }
+    }, 30000); // Every 30 seconds
+    
+    return () => clearInterval(saveInterval);
+  }, [config]);
+
+  // Add more aggressive saving for ANY config change
+  useEffect(() => {
+    // Immediate save whenever config changes
+    if (typeof window !== 'undefined') {
+      // Create a complete config object that includes all necessary data
+      const completeConfig = {
+        ...config,
+        _timestamp: new Date().toISOString(),
+        _meta: {
+          headerTitle: headerTitle,
+          themeColor: themeColor,
+          infoBarExpanded: infoBarExpanded
+        }
+      };
+      
+      // Save to localStorage immediately
+      localStorage.setItem('siteConfig', JSON.stringify(completeConfig));
+      localStorage.setItem('siteConfig_backup', JSON.stringify(completeConfig));
+      console.log('Immediate save on config change at ' + new Date().toISOString());
+    }
+  }, [config]);
+  
+  // Add aggressive saving for theme color changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && themeColor) {
+      localStorage.setItem('themeColor', themeColor);
+      
+      // Also update in the config object and save the full config
+      const completeConfig = {
+        ...config,
+        _timestamp: new Date().toISOString(),
+        _meta: {
+          headerTitle: headerTitle,
+          themeColor: themeColor,
+          infoBarExpanded: infoBarExpanded
+        }
+      };
+      
+      localStorage.setItem('siteConfig', JSON.stringify(completeConfig));
+      localStorage.setItem('siteConfig_backup', JSON.stringify(completeConfig));
+    }
+  }, [themeColor]);
+
+  // Modify the initialization to handle multiple backup sources
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const initializeConfig = async () => {
+        try {
+          // Try to fetch the latest config from the JSON file first (most current)
+          const response = await fetch('/current-config.json?' + new Date().getTime());
+          if (response.ok) {
+            const latestConfig = await response.json();
+            console.log('Loaded config from JSON file');
+            
+            // Force a purple color theme (in localStorage) if none set
+            if (!localStorage.getItem('themeColor')) {
+              localStorage.setItem('themeColor', '#a259e6');
+            }
+            
+            // Ensure the themeColor is properly loaded too
+            const savedThemeColor = localStorage.getItem('themeColor');
+            if (savedThemeColor) {
+              setThemeColor(savedThemeColor);
+            }
+            
+            // Update all our state variables
+            setConfig(latestConfig);
+            
+            // Save to localStorage with metadata to ensure persistence
+            const configToSave = {
+              ...latestConfig,
+              _timestamp: new Date().toISOString(),
+              _meta: {
+                headerTitle: headerTitle || 'Site Configuration',
+                themeColor: savedThemeColor || themeColor,
+                infoBarExpanded: infoBarExpanded
+              }
+            };
+            
+            localStorage.setItem('siteConfig', JSON.stringify(configToSave));
+            localStorage.setItem('siteConfig_backup', JSON.stringify(configToSave));
+            setHistory([latestConfig]);
+            
+            // Load header title if available
+            const savedTitle = localStorage.getItem('headerTitle');
+            if (savedTitle) {
+              console.log('Loaded header title on initialization:', savedTitle);
+              setHeaderTitle(savedTitle);
+            }
+            
+            return;
+          }
+        } catch (error) {
+          console.log('Could not load config from JSON file, falling back to localStorage or default');
+        }
+        
+        // ENHANCED RECOVERY: Check multiple storage locations
+        let parsedConfig = null;
+        let source = '';
+        
+        // Try main localStorage item first
+        const savedConfig = localStorage.getItem('siteConfig');
+        if (savedConfig) {
+          try {
+            parsedConfig = JSON.parse(savedConfig);
+            source = 'primary localStorage';
+          } catch (e) {
+            console.log('Primary localStorage config corrupt, trying backup');
+          }
+        }
+        
+        // If that fails, try the backup localStorage
+        if (!parsedConfig) {
+          const backupConfig = localStorage.getItem('siteConfig_backup');
+          if (backupConfig) {
+            try {
+              parsedConfig = JSON.parse(backupConfig);
+              source = 'backup localStorage';
+            } catch (e) {
+              console.log('Backup localStorage config corrupt, trying sessionStorage');
+            }
+          }
+        }
+        
+        // If both localStorage options fail, try sessionStorage
+        if (!parsedConfig) {
+          const emergencyConfig = sessionStorage.getItem('siteConfig_emergency');
+          if (emergencyConfig) {
+            try {
+              parsedConfig = JSON.parse(emergencyConfig);
+              source = 'sessionStorage emergency backup';
+            } catch (e) {
+              console.log('All stored configs corrupt, using default');
+            }
+          }
+        }
+        
+        // If we found a valid config, use it
+        if (parsedConfig) {
+          console.log(`Loaded config from ${source}`);
+          
+          // Load any metadata if available
+          if (parsedConfig._meta) {
+            console.log('Found metadata in saved config:', parsedConfig._meta);
+            
+            // Restore headerTitle from metadata
+            if (parsedConfig._meta.headerTitle) {
+              setHeaderTitle(parsedConfig._meta.headerTitle);
+              localStorage.setItem('headerTitle', parsedConfig._meta.headerTitle);
+              console.log('Restored headerTitle from config metadata:', parsedConfig._meta.headerTitle);
+            }
+            
+            // Restore theme color from metadata
+            if (parsedConfig._meta.themeColor) {
+              setThemeColor(parsedConfig._meta.themeColor);
+              localStorage.setItem('themeColor', parsedConfig._meta.themeColor);
+            }
+            
+            // Restore theme link from metadata
+            if (parsedConfig._meta.themeLink) {
+              setThemeLink(parsedConfig._meta.themeLink);
+              localStorage.setItem('themeLink', parsedConfig._meta.themeLink);
+              console.log('Restored themeLink from config metadata:', parsedConfig._meta.themeLink);
+            }
+            
+            // Restore infoBarExpanded state from metadata
+            if (parsedConfig._meta.infoBarExpanded !== undefined) {
+              setInfoBarExpanded(parsedConfig._meta.infoBarExpanded);
+              localStorage.setItem('infoBarExpanded', parsedConfig._meta.infoBarExpanded.toString());
+            }
+            
+            // Remove metadata before setting config to avoid UI confusion
+            const { _meta, _timestamp, ...configWithoutMeta } = parsedConfig;
+            setConfig(configWithoutMeta);
+            setHistory([configWithoutMeta]);
+          } else {
+            // No metadata, just use the parsed config
+            setConfig(parsedConfig);
+            setHistory([parsedConfig]);
+            
+            // Try to get header title from localStorage as fallback
+            const savedTitle = localStorage.getItem('headerTitle');
+            if (savedTitle) {
+              setHeaderTitle(savedTitle);
+            }
+            
+            // Try to get theme color from localStorage as fallback
+            const savedThemeColor = localStorage.getItem('themeColor');
+            if (savedThemeColor) {
+              setThemeColor(savedThemeColor);
+            }
+          }
+          
+          // Ensure all backups are in sync
+          localStorage.setItem('siteConfig', JSON.stringify(parsedConfig));
+          localStorage.setItem('siteConfig_backup', JSON.stringify(parsedConfig));
+          sessionStorage.setItem('siteConfig_emergency', JSON.stringify(parsedConfig));
+        } else {
+          // Reset to default
+          localStorage.setItem('siteConfig', JSON.stringify({
+            ...localConfig,
+            _meta: {
+              headerTitle: 'Site Configuration',
+              themeColor: '#a259e6',
+              themeLink: '',
+              infoBarExpanded: true
+            }
+          }));
+          localStorage.setItem('siteConfig_backup', JSON.stringify({
+            ...localConfig,
+            _meta: {
+              headerTitle: 'Site Configuration',
+              themeColor: '#a259e6',
+              themeLink: '',
+              infoBarExpanded: true
+            }
+          }));
+          setConfig(localConfig);
+          setHistory([localConfig]);
+          console.log('Reset to default config due to no valid saved config found');
+        }
+      };
+      
+      initializeConfig();
+    }
+  }, []);
+
+  // Add a window focus event listener to check for any changes
+  useEffect(() => {
+    const handleWindowFocus = () => {
+      console.log('Window focused - ensuring all data is saved');
+      // Use the existing handleSave function
+      handleSave();
+    };
+    
+    window.addEventListener('focus', handleWindowFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus);
+    };
+  }, [config, headerTitle, themeColor, infoBarExpanded]);
+
+  // Add a window blur event listener to save everything
+  useEffect(() => {
+    const handleWindowBlur = () => {
+      console.log('Window blurred - emergency save');
+      
+      // Create a complete config object that includes all necessary data
+      const completeConfig = {
+        ...config,
+        _timestamp: new Date().toISOString(),
+        _meta: {
+          headerTitle: headerTitle,
+          themeColor: themeColor,
+          infoBarExpanded: infoBarExpanded
+        }
+      };
+      
+      // Save to multiple locations for redundancy
+      localStorage.setItem('siteConfig', JSON.stringify(completeConfig));
+      localStorage.setItem('siteConfig_backup', JSON.stringify(completeConfig));
+      sessionStorage.setItem('siteConfig_emergency', JSON.stringify(completeConfig));
+      
+      // Also save individual settings
+      localStorage.setItem('themeColor', themeColor);
+      localStorage.setItem('infoBarExpanded', infoBarExpanded.toString());
+      localStorage.setItem('headerTitle', headerTitle);
+    };
+    
+    window.addEventListener('blur', handleWindowBlur);
+    
+    return () => {
+      window.removeEventListener('blur', handleWindowBlur);
+    };
+  }, [config, headerTitle, themeColor, infoBarExpanded]);
+
+  // Add dedicated effect for keyboard shortcuts
+  useEffect(() => {
+    const handleKeyboardShortcuts = (e: KeyboardEvent) => {
+      // Ctrl+S or Cmd+S for save
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault(); // Prevent browser's save dialog
+        console.log('Ctrl+S detected, triggering save...');
+        handleSave();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyboardShortcuts);
+    return () => window.removeEventListener('keydown', handleKeyboardShortcuts);
+  }, [config, headerTitle, themeColor, infoBarExpanded]); // Dependencies for handleSave
+
+  // Add a new state to track history restoration
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  // Implement the undo functionality
+  const handleUndo = () => {
+    if (history.length > 1) {
+      // Go back one step in history
+      const newIndex = history.length - 2; // Previous state
+      
+      if (newIndex >= 0) {
+        console.log(`Undoing to history state ${newIndex} of ${history.length - 1}`);
+        
+        // Set flag to prevent adding this change back to history
+        setIsRestoringFromHistory(true);
+        
+        // Restore the previous config state
+        const previousConfig: any = history[newIndex];
+        
+        // Save current state to redo history
+        const currentConfig = history[history.length - 1];
+        setRedoHistory(prev => [...prev, currentConfig]);
+        
+        // Update the config state
+        setConfig(previousConfig);
+        
+        // Also update related states if they exist in the previous config
+        if ('themeColor' in previousConfig) {
+          setThemeColor(previousConfig.themeColor as string);
+          localStorage.setItem('themeColor', previousConfig.themeColor as string);
+        }
+        
+        if ('themeLink' in previousConfig) {
+          setThemeLink(previousConfig.themeLink as string);
+          localStorage.setItem('themeLink', previousConfig.themeLink as string);
+        }
+        
+        // Remove the current state from history
+        setHistory(prev => prev.slice(0, -1));
+        
+        // Show toast notification
+        setShowToast(false);
+        setTimeout(() => {
+          setShowToast(true);
+          setTimeout(() => setShowToast(false), 2000);
+        }, 10);
+        
+        return true;
+      }
+    }
+    
+    console.log('Nothing to undo');
+    return false;
+  };
+
+  // Implement the redo functionality
+  const handleRedo = () => {
+    if (redoHistory.length > 0) {
+      console.log(`Redoing to state. Redo history length: ${redoHistory.length}`);
+      
+      // Set flag to prevent adding this change back to history
+      setIsRestoringFromHistory(true);
+      
+      // Get the last item from redo history
+      const redoConfig = redoHistory[redoHistory.length - 1];
+      
+      // Update the config state
+      setConfig(redoConfig);
+      
+      // Also update related states if they exist in the redo config
+      if ('themeColor' in redoConfig) {
+        setThemeColor(redoConfig.themeColor as string);
+        localStorage.setItem('themeColor', redoConfig.themeColor as string);
+      }
+      
+      if ('themeLink' in redoConfig) {
+        setThemeLink(redoConfig.themeLink as string);
+        localStorage.setItem('themeLink', redoConfig.themeLink as string);
+      }
+      
+      // Add the redo state back to history
+      setHistory(prev => [...prev, redoConfig]);
+      
+      // Remove the used redo state
+      setRedoHistory(prev => prev.slice(0, -1));
+      
+      // Show toast notification
+      setShowToast(false);
+      setTimeout(() => {
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2000);
+      }, 10);
+      
+      return true;
+    }
+    
+    console.log('Nothing to redo');
+    return false;
+  };
+
+  // Update the keyboard event handler to use handleUndo for Ctrl+Z
+  useEffect(() => {
+    console.log("Keyboard handler initialized");
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Handle Ctrl+Z / Cmd+Z (undo)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        console.log("Undo shortcut detected");
+        handleUndo();
+        return;
+      }
+      
+      // Handle Ctrl+Shift+Z / Cmd+Shift+Z (redo)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        console.log("Redo shortcut detected");
+        handleRedo();
+        return;
+      }
+      
+      // Ctrl+S/Cmd+S to save
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        console.log("Save shortcut detected - attempting to save...");
+        handleSave();
+        return;
+      }
+      
+      // Ctrl+E/Cmd+E to export
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        console.log("Export triggered");
+        handleExport();
+        return;
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [history.length, redoHistory.length]); // Include redoHistory.length in dependencies
+
+  // Update the config change effect to handle history and redo properly
+  useEffect(() => {
+    // Only add to history if not restoring from history
+    if (!isRestoringFromHistory) {
+      setHistory(prevHistory => {
+        const lastConfig = prevHistory[prevHistory.length - 1];
+        // Only add if different from last entry
+        if (JSON.stringify(lastConfig) !== JSON.stringify(config)) {
+          console.log('Adding new state to history. History length:', prevHistory.length + 1);
+          // Clear redo history when a new change is made
+          setRedoHistory([]);
+          return [...prevHistory, {...config}];
+        }
+        return prevHistory;
+      });
+    } else {
+      // Reset the flag
+      setIsRestoringFromHistory(false);
+    }
+    
+    // Continue with existing code for iframe updates
+    // Send updates to the preview iframe when config changes
+    const previewIframes = document.querySelectorAll('iframe');
+    previewIframes.forEach(iframe => {
+      if (iframe && iframe.contentWindow) {
+        try {
+          // Update sessionStorage first for future iframe loads
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('previewConfig', JSON.stringify({
+              ...config,
+              themeColor
+            }));
+          }
+          
+          // Post a message to any already loaded iframes
+          iframe.contentWindow.postMessage({
+            type: 'configUpdate',
+            config: {
+              ...config,
+              themeColor
+            },
+            themeColor
+          }, '*');
+        } catch (error) {
+          console.error('Error sending config to preview:', error);
+        }
+      }
+    });
+    
+    // Auto-save config to localStorage whenever it changes
+    if (typeof window !== 'undefined') {
+      // Skip immediate auto-save for footer style changes to prevent interrupting the user
+      const prevConfig = prevConfigRef.current;
+      const isFooterStyleChange = prevConfig && 
+        JSON.stringify(prevConfig.footerStyle) !== JSON.stringify(config.footerStyle);
+      
+      if (!isFooterStyleChange) {
+        localStorage.setItem('siteConfig', JSON.stringify(config));
+        console.log('Auto-saved config to localStorage');
+      }
+      
+      // Update the prevConfig ref for the next change
+      prevConfigRef.current = { ...config };
+    }
+  }, [config, themeColor, isRestoringFromHistory]);
+
+  // Add effect to disable reload dialogs (moved from outside the component)
+  useEffect(() => {
+    // Disable all reload dialogs
+    const disableReloadWarnings = () => {
+      // Disable beforeunload
+      window.onbeforeunload = null;
+      
+      // Handle any reload dialogs
+      const handleReloadDialogs = () => {
+        const dialogs = document.querySelectorAll('dialog, [role="dialog"]');
+        dialogs.forEach(dialog => {
+          // Check any checkboxes
+          const checkbox = dialog.querySelector('input[type="checkbox"]');
+          if (checkbox) {
+            (checkbox as HTMLInputElement).checked = true;
+          }
+          
+          // Find and click reload buttons
+          const buttons = dialog.querySelectorAll('button');
+          buttons.forEach(button => {
+            if (button.textContent?.includes('Reload')) {
+              setTimeout(() => button.click(), 10);
+            }
+          });
+        });
+      };
+      
+      // Run immediately
+      handleReloadDialogs();
+      
+      // And again after a delay
+      setTimeout(handleReloadDialogs, 50);
+    };
+    
+    // Listen for config changes
+    document.addEventListener('config-published', disableReloadWarnings);
+    
+    // Also disable on mount
+    disableReloadWarnings();
+    
+    return () => {
+      document.removeEventListener('config-published', disableReloadWarnings);
     };
   }, []);
 
-  return (
-    <main className="min-h-screen bg-[#f5f3ff] py-10 px-4">
-      <div className="max-w-4xl mx-auto bg-[#ede9fe] rounded-2xl shadow-xl p-8">
-        <h1 className="text-3xl font-bold mb-8 text-primary-700 border-b pb-4">Site Configuration</h1>
+  // Add this useEffect near the other event listeners
+  useEffect(() => {
+    // Listen for manual save requests (like from the footer style config)
+    const handleSaveRequest = (event: any) => {
+      console.log('Manual save requested from:', event.detail?.source);
+      handleSave();
+    };
+    
+    document.addEventListener('config-save-requested', handleSaveRequest);
+    
+    return () => {
+      document.removeEventListener('config-save-requested', handleSaveRequest);
+    };
+  }, []);
 
-        {/* Info Bar Section */}
-        <section className="mb-10">
-          <div className="mb-6 p-6 bg-blue-50 border-2 border-blue-300 rounded-xl shadow-lg">
-            <h2 className="text-xl font-bold text-primary-700 mb-4">Info Bar</h2>
-            <div className="mb-2 flex items-center gap-4">
-              <label className="font-semibold text-primary-700 mr-2">Background Color:</label>
+  // Main render function
+  return (
+    <div id="split-container" className="flex flex-col lg:flex-row h-screen w-full overflow-hidden" suppressHydrationWarning style={{ border: '6px solid var(--theme-color)' }}>
+      {/* Config Panel - Left Side */}
+      <div 
+        className={`w-full lg:h-screen overflow-y-auto flex flex-col bg-white lg:border-r lg:border-r-0`} 
+        style={{ 
+          width: isMobileDevice ? '100%' : `${splitPosition}%`,
+          borderRight: !isMobileDevice ? `2px solid ${themeColor}` : 'none'
+        }}
+        ref={configPanelRef}
+      >
+        {/* Header Bar */}
+        <div 
+          className={`flex justify-between items-center px-4 ${isMobileDevice ? 'py-2' : 'py-3'} relative overflow-hidden group`} 
+          style={{ 
+            background: `linear-gradient(135deg, var(--theme-color), ${themeColor}cc)`,
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+          }}
+        >
+          {/* Animated background effect */}
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute -inset-[10%] bg-white/10 rounded-full blur-xl transform translate-x-full group-hover:translate-x-0 transition-transform duration-1500"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-700"></div>
+          </div>
+          
+          <div className="flex items-center gap-3 relative z-10">
+            <div className="relative group/title">
+              <span className={`${isMobileDevice ? 'text-lg' : 'text-xl'} font-bold text-white tracking-wide bg-white px-2 py-1 rounded-sm`} style={{ color: 'black' }}>
+                MY_NEW_PROJECT
+              </span>
+            </div>
+            <div className="relative group/color">
+              {/* Color picker only, hex input removed */}
+              <div className="flex items-center gap-1">
               <input
                 type="color"
-                value={config.infoBar?.backgroundColor || '#1787c9'}
-                onChange={e => setConfig({ ...config, infoBar: { ...config.infoBar, backgroundColor: e.target.value } })}
-                className="w-10 h-10 border rounded"
-              />
-              <input
-                type="text"
-                value={config.infoBar?.backgroundColor || '#1787c9'}
+                value={themeColor}
                 onChange={e => {
-                  const val = e.target.value;
-                  if (/^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/.test(val) || val === '') {
-                    setConfig({ ...config, infoBar: { ...config.infoBar, backgroundColor: val } });
-                  }
+                  const newColor = e.target.value;
+                  setThemeColor(newColor);
+                  setConfig(prev => ({ ...prev, themeColor: newColor }));
+                  localStorage.setItem('themeColor', newColor);
                 }}
-                className="ml-2 text-xs border rounded px-2 py-1 w-20"
-                maxLength={7}
-                placeholder="#1787c9"
+                className={`${isMobileDevice ? 'w-6 h-6' : 'w-8 h-8'} border-2 border-white rounded cursor-pointer transition-all duration-300 hover:scale-105`}
+                title="Pick theme color"
+                style={{ boxShadow: '0 0 8px rgba(255, 255, 255, 0.5)' }}
+                id="themeColorPicker"
               />
+              </div>
+              <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/color:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                Theme color
+              </span>
             </div>
-            <div className="mb-2 flex items-center gap-4">
-              <label className="font-semibold text-primary-700 mr-2">Phone:</label>
-              <input
-                type="text"
-                value={config.infoBar?.phone || ''}
-                onChange={e => setConfig({ ...config, infoBar: { ...config.infoBar, phone: e.target.value } })}
-                className="border rounded px-2 py-1 w-56"
-                placeholder="Phone"
-              />
+          </div>
+          
+          <div className="flex items-center gap-3 relative z-10">
+            {/* Save Changes Button */}
+            <button
+              type="button"
+              className="bg-white text-indigo-600 hover:bg-indigo-50 font-medium py-1.5 px-4 rounded-md shadow-sm border border-indigo-200 transition-colors duration-200 flex items-center gap-1"
+              onClick={handleSave}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+              </svg>
+              Save
+            </button>
+            
+            {/* Publish button */}
+            <button
+              onClick={handlePublish}
+              disabled={isPublishing}
+              className={`
+                flex items-center gap-1 text-white py-1.5 px-4 rounded-md shadow-sm transition-colors duration-200
+                ${isPublishing 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-emerald-700 hover:bg-emerald-800 border border-emerald-800'
+                }
+              `}
+            >
+              {isPublishing ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Publishing...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  Publish
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Toast Notification */}
+        <Toast message="Changes saved successfully!" show={showToast} />
+
+        {/* Mobile warning banner */}
+        {isMobileDevice && (
+          <div id="mobile-info-banner" className="mx-4 mt-2 p-2 bg-blue-50 text-blue-800 rounded-lg shadow-sm flex items-center gap-2">
+            <svg className="w-5 h-5 flex-shrink-0 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div className="flex-1">
+              <p className="font-medium text-sm">Mobile view enabled</p>
+              <p className="text-xs">Interface optimized for your device</p>
             </div>
-            <div className="mb-2 flex items-center gap-4">
-              <label className="font-semibold text-primary-700 mr-2">Address:</label>
+            <button 
+              className="ml-auto text-blue-600 hover:text-blue-800" 
+              onClick={() => document.getElementById('mobile-info-banner')?.remove()}
+              aria-label="Close banner"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* Publish success/error message */}
+        {publishMessage && (
+          <div className={`mx-4 mt-4 p-3 rounded ${publishStatus === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            {publishMessage}
+          </div>
+        )}
+
+        {/* Top Buttons */}
+        <section className={`${isMobileDevice ? 'mb-3 px-3 pt-2' : 'mb-6 flex flex-wrap gap-3 px-4 pt-6'} flex flex-wrap gap-2 justify-center`}>
+          <a 
+            href="https://www.color-hex.com/" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className={`px-4 ${isMobileDevice ? 'py-1 text-sm' : 'py-2'} rounded shadow font-semibold transition-colors`}
+            style={{ background: 'var(--theme-color)', color: '#fff' }}
+          >
+            COLORS
+          </a>
+          <a 
+            href="https://favicon.io/favicon-converter/" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className={`px-4 ${isMobileDevice ? 'py-1 text-sm' : 'py-2'} rounded shadow font-semibold transition-colors`}
+            style={{ background: 'var(--theme-color)', color: '#fff' }}
+          >
+            FAVICON
+          </a>
+          <a 
+            href="https://www.myfonts.com/pages/whatthefont" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className={`px-4 ${isMobileDevice ? 'py-1 text-sm' : 'py-2'} rounded shadow font-semibold transition-colors`}
+            style={{ background: 'var(--theme-color)', color: '#fff' }}
+          >
+            FONT FINDER
+          </a>
+        </section>
+
+        {/* Current Theme Link */}
+        <section className={`${isMobileDevice ? 'mb-3 px-3' : 'mb-6 px-4'} flex flex-col items-center`}>
+          <label className={`block font-semibold text-black ${isMobileDevice ? 'mb-0 text-sm' : 'mb-1'}`}>Current Theme Link:</label>
+          <div className="flex gap-2 items-center justify-center w-full max-w-xl">
             <input
-                type="text"
-                value={config.infoBar?.address || ''}
-                onChange={e => setConfig({ ...config, infoBar: { ...config.infoBar, address: e.target.value } })}
-                className="border rounded px-2 py-1 w-96"
-                placeholder="Address"
-              />
-            </div>
-            <div className="mb-2 flex items-center gap-4">
-              <label className="font-semibold text-primary-700 mr-2">Hours:</label>
-              <input
-                type="text"
-                value={config.infoBar?.hours || ''}
-                onChange={e => setConfig({ ...config, infoBar: { ...config.infoBar, hours: e.target.value } })}
-                className="border rounded px-2 py-1 w-64"
-                placeholder="Hours"
-              />
-            </div>
+              type="text"
+              className={`border rounded ${isMobileDevice ? 'px-2 py-1 text-sm' : 'px-3 py-2'} w-96 max-w-full`}
+              placeholder="Paste your palette/theme link here..."
+              value={themeLink}
+              onChange={e => {
+                const newLink = e.target.value;
+                setThemeLink(newLink);
+                setConfig(prev => ({ ...prev, themeLink: newLink }));
+                localStorage.setItem('themeLink', newLink);
+              }}
+              style={{ background: 'transparent', borderColor: 'var(--theme-color-light)', backdropFilter: 'blur(5px)' }}
+            />
+            <button
+              className={`${isMobileDevice ? 'px-3 py-1 text-sm' : 'px-4 py-2'} rounded shadow font-semibold transition-colors`}
+              style={{ background: 'var(--theme-color)', color: '#fff' }}
+              disabled={!themeLink.trim()}
+              onClick={() => {
+                if (themeLink.trim()) window.open(themeLink, '_blank');
+              }}
+            >Go</button>
           </div>
         </section>
 
-        {/* Nav Bar Section */}
-        <section className="mb-10">
-          <div className="mb-8 p-8 bg-blue-50 border-2 border-blue-300 rounded-2xl shadow-lg">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-primary-700">Nav Bar</h2>
+        {/* Config Content */}
+        <div className={`flex-1 ${isMobileDevice ? 'pt-0 px-2' : 'p-4'} overflow-y-auto`}>
+          <div className={`${isMobileDevice ? 'w-full mt-0' : 'max-w-3xl mx-auto'} bg-gray-50 rounded-lg shadow ${isMobileDevice ? 'p-3' : 'p-6'}`}>
+            {/* Info Bar Section (collapsible) */}
+            <section className={`${isMobileDevice ? 'mb-4' : 'mb-8'} bg-white ${isMobileDevice ? 'p-3' : 'p-5'} rounded-lg shadow`} style={{ border: '2px solid var(--theme-color-light)' }}>
               <button
-                className="text-primary-600 font-semibold px-3 py-1 rounded hover:bg-blue-100 transition flex items-center gap-1"
-                onClick={() => setNavBarExpanded(e => !e)}
-                aria-expanded={navBarExpanded}
-                aria-controls="nav-bar-section"
+                className="flex items-center w-full text-left gap-2 mb-4 focus:outline-none"
+                onClick={() => setInfoBarExpanded((prev) => !prev)}
+                type="button"
+                style={{ color: '#111827' }}
               >
-                <span className={`transform transition-transform duration-200 ${navBarExpanded ? 'rotate-180' : ''}`}>▼</span>
+                <h2 className="text-xl font-bold">Info Bar</h2>
+                <span className="ml-2 text-xl transform transition-transform duration-200 info-bar-dropdown-icon text-gray-900">▼</span>
+              </button>
+              {infoBarExpanded && <InfoBarConfig config={config} setConfig={setConfig} />}
+            </section>
+
+            {/* Nav Bar Section */}
+            <section className={`${isMobileDevice ? 'mb-4' : 'mb-8'} bg-white ${isMobileDevice ? 'p-3' : 'p-5'} rounded-lg shadow`} style={{ border: '2px solid var(--theme-color-light)' }}>
+              <NavBarConfig 
+                config={config} 
+                setConfig={setConfig} 
+                navBarExpanded={navBarExpanded} 
+                setNavBarExpanded={setNavBarExpanded}
+                handleRemovePage={handleRemovePage}
+              />
+            </section>
+
+            {/* Footer Section */}
+            <section className={`${isMobileDevice ? 'mb-4' : 'mb-8'} bg-white ${isMobileDevice ? 'p-3' : 'p-5'} rounded-lg shadow`} style={{ border: '2px solid var(--theme-color-light)' }}>
+              <FooterConfig
+                config={config}
+                setConfig={setConfig}
+                footerExpanded={footerExpanded}
+                setFooterExpanded={setFooterExpanded}
+              />
+            </section>
+
+            {/* Pages Section */}
+            <section className={`bg-white ${isMobileDevice ? 'p-3' : 'p-5'} rounded-lg shadow`} style={{ border: '2px solid var(--theme-color-light)' }}>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-800 mb-2">Pages</h2>
+                <button 
+                  className="px-4 py-2 rounded shadow font-medium transition-colors"
+                  style={{ background: 'var(--theme-color)', color: '#fff' }}
+                  onClick={handleAddPage}
+                >
+                  Add Page
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Custom order: Home, Services, Reviews, Contact */}
+                {['Home', 'Services', 'Reviews', 'Contact'].map((pageKey) => {
+                  if (!(config.pages as any)[pageKey]) return null;
+                  const page = (config.pages as any)[pageKey];
+                  const setPage = (newPage: any) => setConfig((prev: any) => ({
+                    ...prev,
+                    pages: {
+                      ...(prev.pages as any),
+                      [pageKey]: newPage
+                    }
+                  }));
+                  const isExpanded = expandedPage === pageKey;
+                  return (
+                    <div key={pageKey} className="bg-gray-50 rounded-lg shadow p-4" style={{ border: '2px solid var(--theme-color-light)' }}>
+                      <div className="flex justify-between items-center cursor-pointer" onClick={() => {
+                        if (expandedPage === pageKey) {
+                          setExpandedPage(null);
+                        } else {
+                          setExpandedPage(pageKey);
+                        }
+                      }}>
+                        <h3 className="text-lg font-semibold text-gray-800">{pageKey} Page</h3>
+                        <span className="text-xl transform transition-transform duration-200 page-dropdown-icon text-gray-900">
+                          <span className="dropdown-arrow">▼</span>
+                        </span>
+                      </div>
+                      {isExpanded && (
+                        <div className="mt-4">
+                          {/* Hero Section for Home Page */}
+                          {pageKey === 'Home' && (
+                            <div className="mb-8">
+                              <div className="rounded-2xl shadow-2xl border border-[#8b5cf6] bg-white/80 p-4">
+                                <button
+                                  className="flex items-center w-full text-left gap-2 mb-4 focus:outline-none"
+                                  onClick={() => {
+                                    setShowHeroSection(prev => {
+                                      const newState = { ...prev };
+                                      newState[pageKey] = !prev[pageKey];
+                                      return newState;
+                                    });
+                                  }}
+                                  type="button"
+                                >
+                                  <h3 className="text-2xl font-bold text-purple-700">Hero Section</h3>
+                                  <span className="ml-2 text-xl transform transition-transform duration-200 hero-section-icon text-gray-900" data-page={pageKey}>
+                                    <span className="dropdown-arrow">▼</span>
+                                  </span>
+                                </button>
+                                {showHeroSection[pageKey] && (
+                                  <HeroSectionForm page={page} setPage={setPage} />
+                                )}
+                              </div>
+                              
+                              {/* Schedule Section Controls */}
+                              <ScheduleSection 
+                                page={page} 
+                                setPage={setPage} 
+                                showScheduleSection={showScheduleSection} 
+                                setShowScheduleSection={setShowScheduleSection} 
+                              />
+                              
+                              {/* Guarantee Section Controls */}
+                              <GuaranteeSection 
+                                page={page} 
+                                setPage={setPage} 
+                                showGuaranteeSection={showGuaranteeSection} 
+                                setShowGuaranteeSection={setShowGuaranteeSection} 
+                              />
+                              
+                              {/* Services Section Controls */}
+                              <ServicesSection 
+                                page={page} 
+                                setPage={setPage} 
+                                showServicesSection={showServicesSection} 
+                                setShowServicesSection={setShowServicesSection} 
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Services Page Configuration */}
+                          {pageKey === 'Services' && (
+                            <div className="mb-8">
+                              <ServicePageConfig 
+                                page={page}
+                                setPage={setPage}
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Reviews Page Configuration */}
+                          {pageKey === 'Reviews' && (
+                            <div className="mb-8">
+                              <ReviewPageConfig 
+                                page={page}
+                                setPage={setPage}
+                              />
+                            </div>
+                          )}
+
+                          {/* Contact Page Configuration */}
+                          {pageKey === 'Contact' && (
+                            <div className="mb-8">
+                              <ContactPageConfig 
+                                page={page}
+                                setPage={setPage}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                
+                {/* Render any other pages that aren't in the custom order */}
+                {Object.keys(config.pages as any)
+                  .filter(pageKey => !['Home', 'Services', 'Reviews', 'Contact'].includes(pageKey))
+                  .map((pageKey) => {
+                    const page = (config.pages as any)[pageKey];
+                    const setPage = (newPage: any) => setConfig((prev: any) => ({
+                      ...prev,
+                      pages: {
+                        ...(prev.pages as any),
+                        [pageKey]: newPage
+                      }
+                    }));
+                    const isExpanded = expandedPage === pageKey;
+                    return (
+                      <div key={pageKey} className="bg-white rounded-xl shadow p-4">
+                        <div className="flex justify-between items-center cursor-pointer" onClick={() => {
+                          if (expandedPage === pageKey) {
+                            setExpandedPage(null);
+                          } else {
+                            setExpandedPage(pageKey);
+                          }
+                        }}>
+                          <h3 className="text-lg font-semibold text-black">{pageKey} Page</h3>
+                          <span className="text-purple-600 text-xl transform transition-transform duration-200 page-dropdown-icon">
+                            <span className="dropdown-arrow">▼</span>
+                          </span>
+                        </div>
+                        {isExpanded && (
+                          <div className="mt-4">
+                            {/* Add any page-specific content here */}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </section>
+
+            {/* Save/Reset/Export Buttons */}
+            <div className={`flex flex-wrap gap-4 ${isMobileDevice ? 'mt-4 gap-2' : 'mt-10'}`}>
+              <button 
+                className={`${isMobileDevice ? 'px-4 py-1 text-sm' : 'px-6 py-2'} rounded shadow font-bold`} 
+                style={{ background: 'var(--theme-color)', color: '#fff' }} 
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log('Bottom Save button clicked');
+                  handleSave();
+                }}
+                id="save-button-bottom"
+                type="button"
+              >
+                Save
+              </button>
+              <button className={`${isMobileDevice ? 'px-4 py-1 text-sm' : 'px-6 py-2'} bg-gray-200 text-gray-700 rounded shadow font-bold hover:bg-gray-300`} onClick={handleReset}>Reset</button>
+              <button className={`${isMobileDevice ? 'px-4 py-1 text-sm' : 'px-6 py-2'} rounded shadow font-bold`} style={{ background: 'var(--theme-color-light)', color: 'var(--theme-color)' }} onClick={handleExport}>Export</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Resizable Divider */}
+      {!isMobileDevice && (
+        <div 
+          ref={splitDividerRef}
+          className={`hidden lg:flex absolute top-0 bottom-0 w-2 cursor-col-resize z-20 flex-col items-center justify-center transition-colors ${isDragging ? 'bg-purple-200' : ''}`}
+          style={{ 
+            left: `${splitPosition}%`, 
+            transform: 'translateX(-50%)', 
+            background: 'var(--theme-color)'
+          }}
+          onMouseDown={handleDividerMouseDown}
+        >
+          <div className="h-16 flex flex-col items-center justify-center space-y-1">
+            <div className="w-0.5 h-8 bg-white opacity-70"></div>
+            <div className="w-0.5 h-8 bg-white opacity-70"></div>
+          </div>
+        </div>
+      )}
+
+      {/* Preview Panel - Right Side */}
+      {!isMobileDevice && (
+        <div 
+          className="w-full lg:h-screen bg-white hidden lg:block"
+          style={{ 
+            width: `${100 - splitPosition}%`, 
+            background: 'var(--theme-color-light)',
+            borderLeft: `2px solid ${themeColor}`
+          }}
+        >
+          {/* Preview header */}
+          <div 
+            className="h-12 flex items-center justify-between px-6 relative overflow-hidden group" 
+            style={{ 
+              background: `linear-gradient(135deg, var(--theme-color), ${themeColor}cc)`,
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            {/* Animated background effect */}
+            <div className="absolute inset-0 opacity-20">
+              <div className="absolute -inset-[10%] bg-white/10 rounded-full blur-xl transform translate-x-full group-hover:translate-x-0 transition-transform duration-1500"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-700"></div>
+            </div>
+            
+            <div className="flex items-center gap-2 relative z-10">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span className="font-bold text-white tracking-wide relative z-10">Live Preview</span>
+              <div 
+                onClick={() => setShowInstructions(true)}
+                className="relative ml-1 cursor-pointer group/pulse"
+              >
+                <div className="h-5 w-5 rounded-full bg-white/30 flex items-center justify-center hover:bg-white/40 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="absolute inset-0 rounded-full bg-white/20 animate-ping opacity-75 duration-1000" style={{ animationIterationCount: 'infinite', animationDuration: '2s' }}></div>
+              </div>
+            </div>
+            
+            <div className="flex space-x-2 items-center relative z-10">
+              <div className="flex bg-white/10 p-0.5 rounded-md backdrop-blur-sm border border-white/10">
+                <button 
+                  className={`px-3 py-1 rounded text-xs font-medium transition-all duration-300 hover:scale-105 ${!mobilePreview ? 'bg-white/20' : ''}`}
+                  style={{ 
+                    color: '#fff'
+                  }}
+                  onClick={() => setMobilePreview(false)}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <span>Desktop</span>
+                  </div>
+                </button>
+                <button 
+                  className={`px-3 py-1 rounded text-xs font-medium transition-all duration-300 hover:scale-105 ${mobilePreview ? 'bg-white/20' : ''}`}
+                  style={{ 
+                    color: '#fff' 
+                  }}
+                  onClick={() => setMobilePreview(true)}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <span>Mobile</span>
+                  </div>
+                </button>
+              </div>
+              
+              <button 
+                className="px-3 py-1 rounded text-xs font-medium transition-all duration-300 hover:shadow-lg hover:scale-105 flex items-center gap-1.5"
+                style={{ 
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(4px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)', 
+                  color: '#fff' 
+                }}
+                onClick={() => window.open('/preview', '_blank')}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                <span>New Tab</span>
               </button>
             </div>
-            {navBarExpanded && (
-              <div id="nav-bar-section">
-                <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                  {/* Colors */}
-                  <div className="flex flex-col gap-6">
-                    <div className="flex items-center gap-3 bg-[#f8fafc] p-2 rounded">
-                      <label className="font-semibold text-primary-700 w-32">Background Color:</label>
-                      <input
-                        type="color"
-                        value={config.navBar?.backgroundColor || '#ffffff'}
-                        onChange={e => setConfig({ ...config, navBar: { ...config.navBar, backgroundColor: e.target.value } })}
-                        className="w-10 h-10 border rounded"
-                      />
-                      <input
-                        type="text"
-                        value={config.navBar?.backgroundColor || '#ffffff'}
-                        onChange={e => setConfig({ ...config, navBar: { ...config.navBar, backgroundColor: e.target.value } })}
-                        className="w-24 border rounded px-2 py-1 text-sm"
-                      />
-                    </div>
-                    <div className="flex items-center gap-3 bg-[#e0f2fe] p-2 rounded">
-                      <label className="font-semibold text-primary-700 w-32">Text Color:</label>
-                      <input
-                        type="color"
-                        value={config.navBar?.textColor || '#0369a1'}
-                        onChange={e => setConfig({ ...config, navBar: { ...config.navBar, textColor: e.target.value } })}
-                        className="w-10 h-10 border rounded"
-                      />
-                      <input
-                        type="text"
-                        value={config.navBar?.textColor || '#0369a1'}
-                        onChange={e => setConfig({ ...config, navBar: { ...config.navBar, textColor: e.target.value } })}
-                        className="w-24 border rounded px-2 py-1 text-sm"
-                      />
-                    </div>
-                    <div className="flex items-center gap-3 bg-[#e0f7fa] p-2 rounded">
-                      <label className="font-semibold text-primary-700 w-32">Site Title Gradient From:</label>
-                      <input
-                        type="color"
-                        value={config.navBar?.siteTitleGradientFrom || '#3b82f6'}
-                        onChange={e => setConfig({ ...config, navBar: { ...config.navBar, siteTitleGradientFrom: e.target.value } })}
-                        className="w-10 h-10 border rounded"
-                      />
-                      <input
-                        type="text"
-                        value={config.navBar?.siteTitleGradientFrom || '#3b82f6'}
-                        onChange={e => setConfig({ ...config, navBar: { ...config.navBar, siteTitleGradientFrom: e.target.value } })}
-                        className="w-24 border rounded px-2 py-1 text-sm"
-                      />
-                    </div>
-                    <div className="flex items-center gap-3 bg-[#e0f7fa] p-2 rounded">
-                      <label className="font-semibold text-primary-700 w-32">Site Title Gradient To:</label>
-                      <input
-                        type="color"
-                        value={config.navBar?.siteTitleGradientTo || '#06b6d4'}
-                        onChange={e => setConfig({ ...config, navBar: { ...config.navBar, siteTitleGradientTo: e.target.value } })}
-                        className="w-10 h-10 border rounded"
-                      />
-                      <input
-                        type="text"
-                        value={config.navBar?.siteTitleGradientTo || '#06b6d4'}
-                        onChange={e => setConfig({ ...config, navBar: { ...config.navBar, siteTitleGradientTo: e.target.value } })}
-                        className="w-24 border rounded px-2 py-1 text-sm"
-                      />
-                    </div>
-                    <div className="flex items-center gap-3 bg-[#f1f8e9] p-2 rounded">
-                      <label className="font-semibold text-primary-700 w-32">Schedule Button Text:</label>
-                      <input
-                        type="text"
-                        value={(config.navBar as NavBarConfig)?.scheduleButtonText || 'Schedule Now'}
-                        onChange={e => setConfig({ ...config, navBar: { ...(config.navBar as NavBarConfig), scheduleButtonText: e.target.value } })}
-                        className="w-48 border rounded px-2 py-1 text-sm"
-                      />
-                    </div>
-                    <div className="flex items-center gap-3 bg-[#e3f2fd] p-2 rounded">
-                      <label className="font-semibold text-primary-700 w-32">Schedule Button Color:</label>
-                      <input
-                        type="color"
-                        value={(config.navBar as NavBarConfig)?.scheduleButtonColor || '#2563eb'}
-                        onChange={e => setConfig({ ...config, navBar: { ...(config.navBar as NavBarConfig), scheduleButtonColor: e.target.value } })}
-                        className="w-10 h-10 border rounded"
-                      />
-                      <input
-                        type="text"
-                        value={(config.navBar as NavBarConfig)?.scheduleButtonColor || '#2563eb'}
-                        onChange={e => setConfig({ ...config, navBar: { ...(config.navBar as NavBarConfig), scheduleButtonColor: e.target.value } })}
-                        className="w-24 border rounded px-2 py-1 text-sm"
-                      />
-                    </div>
-                    <div className="flex items-center gap-3 bg-[#ede7f6] p-2 rounded">
-                      <label className="font-semibold text-primary-700 w-32">Active Tab Color:</label>
-                      <input
-                        type="color"
-                        value={(config.navBar as NavBarConfig)?.activeTabColor || '#3b82f6'}
-                        onChange={e => setConfig({ ...config, navBar: { ...(config.navBar as NavBarConfig), activeTabColor: e.target.value } })}
-                        className="w-10 h-10 border rounded"
-                      />
-                      <input
-                        type="text"
-                        value={(config.navBar as NavBarConfig)?.activeTabColor || '#3b82f6'}
-                        onChange={e => setConfig({ ...config, navBar: { ...(config.navBar as NavBarConfig), activeTabColor: e.target.value } })}
-                        className="w-24 border rounded px-2 py-1 text-sm"
-                      />
-                    </div>
-                  </div>
-                  {/* Logo and Title Controls */}
-                  <div className="flex flex-col gap-6 w-full">
-                    <div className="flex items-center gap-3 bg-[#fffde7] p-2 rounded">
-                      <input
-                        type="checkbox"
-                        checked={!!config.showLogo}
-                        onChange={e => setConfig({ ...config, showLogo: e.target.checked })}
-                        id="showLogo"
-                        className="accent-primary-600 w-5 h-5"
-                      />
-                      <label htmlFor="showLogo" className="font-semibold text-primary-700">Show Logo in Nav Bar</label>
-                    </div>
-                    <div className="flex flex-col gap-2 w-full bg-[#e1f5fe] p-2 rounded">
-                      <span className="font-semibold text-primary-700">Logo:</span>
-                      <div className="flex items-center gap-2 w-full">
-                        <input
-                          type="text"
-                          className="border rounded px-2 py-1 text-sm w-full"
-                          value={config.navBar?.logo?.startsWith('/images/') ? config.navBar.logo.slice(8) : (config.navBar?.logo || '')}
-                          onChange={e => {
-                            let val = e.target.value.trim();
-                            if (val.startsWith('/images/')) val = val.slice(8);
-                            setConfig({ ...config, navBar: { ...config.navBar, logo: val } });
-                          }}
-                          placeholder="e.g. bon.png"
-                        />
-                        <button
-                          type="button"
-                          className="ml-2 px-2 py-1 bg-gray-200 rounded text-xs"
-                          onClick={() => setConfig({ ...config, navBar: { ...config.navBar, logo: '' } })}
-                        >Remove</button>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 w-full bg-[#f3e5f5] p-2 rounded">
-                      <label className="font-semibold text-primary-700 w-32">Nav Bar Text:</label>
-                      <input
-                        type="text"
-                        value={config.navBar?.siteTitle || ''}
-                        onChange={e => setConfig({ ...config, navBar: { ...config.navBar, siteTitle: e.target.value } })}
-                        className="flex-1 border rounded px-2 py-1 text-lg font-semibold min-w-0"
-                        placeholder="Site Title"
-                      />
-                    </div>
-                  </div>
+          </div>
+          
+          {/* Preview content */}
+          <div className="w-full h-[calc(100vh-3rem)] overflow-hidden flex items-center justify-center" style={{ background: 'var(--theme-color-light)' }}>
+            {mobilePreview ? (
+              <div className="bg-gray-800 rounded-3xl p-3 shadow-xl w-[375px] h-[85vh] overflow-hidden">
+                <div className="w-full h-6 flex justify-center items-center mb-1">
+                  <div className="w-20 h-3 bg-gray-700 rounded-full"></div>
                 </div>
-                {/* Pages in Nav Bar */}
-                <div className="mb-4">
-                  <div className="mb-2 font-semibold text-primary-700">Pages in Nav Bar</div>
-                  <div className="flex flex-wrap gap-4 mb-4">
-                    {Object.keys(config.pages).map((pageKey) => {
-                      const inNav = config.navBar && Array.isArray(config.navBar.navLinks)
-                        ? config.navBar.navLinks.some((link: any) => link.label === pageKey || link.label === `${pageKey} Page`)
-                        : false;
-                      return (
-                        <div key={pageKey} className="flex flex-col items-start gap-2 bg-white border border-blue-200 rounded-lg shadow-sm p-3 min-w-[180px] max-w-xs">
-                          <div className="font-semibold text-primary-700 mb-1">{pageKey}</div>
-                          <div className="flex gap-2 w-full justify-between items-center mt-1">
-                            {inNav ? (
-                              <button
-                                className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                                onClick={() => {
-                                  const newLinks = config.navBar.navLinks.filter((link: any) => link.label !== pageKey && link.label !== `${pageKey} Page`);
-                                  setConfig({ ...config, navBar: { ...config.navBar, navLinks: newLinks } });
-                                }}
-                              >Remove from Nav</button>
-                            ) : (
-                              <button
-                                className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
-                                onClick={() => {
-                                  const newLinks = [...config.navBar.navLinks, { label: pageKey, path: `/${pageKey.toLowerCase()}` }];
-                                  setConfig({ ...config, navBar: { ...config.navBar, navLinks: newLinks } });
-                                }}
-                              >Add to Nav</button>
-                            )}
-                            <button
-                              className="px-2 py-1 text-xs bg-red-50 text-red-700 border border-red-200 rounded hover:bg-red-200"
-                              onClick={() => handleRemovePage(pageKey)}
-                            >Delete Page</button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    <button
-                      className="flex flex-col items-center justify-center min-w-[120px] max-w-xs h-[88px] bg-blue-50 border-2 border-dashed border-blue-300 text-blue-700 rounded-lg hover:bg-blue-100 font-semibold transition-colors"
-                      onClick={() => {
-                        const newPageKey = prompt('Enter a unique page key (e.g., About, Blog):');
-                        if (newPageKey && !(config.pages as any)[newPageKey]) {
-                          setConfig({
-                            ...config,
-                            pages: {
-                              ...config.pages,
-                              [newPageKey]: {
-                                title: '',
-                                content: '',
-                                heroImage: '',
-                              },
-                            },
-                          });
-                        } else if (newPageKey) {
-                          alert('Page key already exists or is invalid.');
-                        }
-                      }}
-                    >
-                      <span className="text-2xl">+</span>
-                      <span className="text-xs">Add Page</span>
-                    </button>
-                  </div>
+                <div className="bg-white h-[calc(100%-1.75rem)] rounded-2xl overflow-hidden">
+                  <iframe 
+                    src="/preview" 
+                    className="w-full h-full border-none"
+                    title="Mobile Website Preview"
+                    id="preview-mobile"
+                    data-preview-frame="true"
+                  />
                 </div>
               </div>
+            ) : (
+              <iframe 
+                src="/preview" 
+                className="w-full h-full border-none"
+                title="Website Preview"
+                id="preview-desktop"
+                data-preview-frame="true"
+              />
             )}
           </div>
-        </section>
-
-        {/* Pages Section */}
-        <section>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-primary-700 mb-2">Pages</h2>
-            <button className="px-4 py-2 bg-primary-600 text-white rounded shadow font-bold hover:bg-primary-700" onClick={handleAddPage}>Add Page</button>
-          </div>
-          <div className="space-y-4">
-            {Object.keys(config.pages as any).map((pageKey) => {
-              const page = (config.pages as any)[pageKey];
-              const setPage = (newPage: any) => setConfig((prev: any) => ({
-                ...prev,
-                pages: {
-                  ...(prev.pages as any),
-                  [pageKey]: newPage
-                }
-              }));
-              const isExpanded = expandedPage === pageKey;
-              return (
-                <div key={pageKey} className="bg-blue-50 rounded-xl shadow p-4">
-                  <div className="flex justify-between items-center cursor-pointer" onClick={() => setExpandedPage(isExpanded ? null : pageKey)}>
-                    <h3 className="text-lg font-semibold text-primary-700">{pageKey} Page</h3>
-                    <span className={`text-primary-600 text-xl transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
-                  </div>
-                  {isExpanded && (
-                    <div className="mt-4">
-                      {/* Hero Section for Home Page */}
-                      {pageKey === 'Home' && (
-                        <div className="mb-8">
-                          <div className="rounded-2xl shadow-2xl border border-[#c4b5fd] bg-white/80 p-8 mb-8">
-                            <h3 className="text-2xl font-bold text-purple-700 mb-6">Hero Section</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              {/* Hero Image */}
-                              <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-xl shadow-lg p-4 flex flex-col items-start">
-                                <div className="text-xl font-extrabold text-blue-800 mb-2">Hero Image</div>
-                                {page.heroImage ? (
-                                  <img
-                                    src={`/images/${page.heroImage}`}
-                                    alt="Hero Preview"
-                                    className="h-24 w-auto rounded shadow border border-blue-200 mb-2 bg-white"
-                                    onError={e => (e.currentTarget.src = 'https://via.placeholder.com/120x80?text=No+Image')}
-                                  />
-                                ) : (
-                                  <img
-                                    src={'https://via.placeholder.com/120x80?text=No+Image'}
-                                    alt="No Hero Image"
-                                    className="h-24 w-auto rounded shadow border border-blue-200 mb-2 bg-white"
-                                  />
-                                )}
-                                <input
-                                  className="w-full font-semibold text-primary-600 bg-transparent border-b border-primary-200 focus:outline-none mb-2"
-                                  value={page.heroImage || ''}
-                                  onChange={e => setPage({ ...page, heroImage: e.target.value })}
-                                  placeholder="Hero Image (e.g. hero-home.jpg)"
-                                />
-                              </div>
-                              {/* Hero Badge Section */}
-                              <div className="mb-6 bg-pink-50 border-2 border-pink-200 rounded-xl shadow-lg p-4">
-                                <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowBadge(v => !v)}>
-                                  <span className="text-xl font-extrabold text-pink-800">Hero Badge</span>
-                                  <span className={`transform transition-transform duration-200 ${showBadge ? 'rotate-180' : ''}`}>▼</span>
-                                </button>
-                                {showBadge && (
-                                  <div className="pl-2 pt-2 flex flex-col gap-4">
-                                    <input className="w-full font-semibold text-primary-600 bg-transparent border-b border-primary-200 focus:outline-none mb-2" value={page.badge || ''} onChange={e => setPage({ ...page, badge: e.target.value })} placeholder="Badge" />
-                                <div className="flex items-center gap-4">
-                                  <input type="color" value={page.heroBadgeColor || '#1787c9'} onChange={e => setPage({ ...page, heroBadgeColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                  <input type="text" value={page.heroBadgeColor || '#1787c9'} onChange={e => setPage({ ...page, heroBadgeColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={9} placeholder="#1787c9" />
-                                </div>
-                                <div className="flex items-center gap-4 mt-2">
-                                  <label className="text-sm font-medium text-primary-700">Badge Text Color:</label>
-                                  <input type="color" value={page.heroBadgeTitleColor || '#fff'} onChange={e => setPage({ ...page, heroBadgeTitleColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                  <input type="text" value={page.heroBadgeTitleColor || '#fff'} onChange={e => setPage({ ...page, heroBadgeTitleColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                                </div>
-                              </div>
-                                )}
-                              </div>
-                              {/* Hero Title Section */}
-                              <div className="mb-6 bg-purple-50 border-2 border-purple-200 rounded-xl shadow-lg p-4">
-                                <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowTitle(v => !v)}>
-                                  <span className="text-xl font-extrabold text-purple-800">Hero Title</span>
-                                  <span className={`transform transition-transform duration-200 ${showTitle ? 'rotate-180' : ''}`}>▼</span>
-                                </button>
-                                {showTitle && (
-                                  <div className="pl-2 pt-2 flex flex-col gap-4">
-                                    <input className="w-full font-semibold text-primary-600 bg-transparent border-b border-primary-200 focus:outline-none mb-2" value={page.title || ''} onChange={e => setPage({ ...page, title: e.target.value })} placeholder="Title" />
-                                <div className="flex items-center gap-4">
-                                  <input type="color" value={page.heroTitleColor || '#fff'} onChange={e => setPage({ ...page, heroTitleColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                  <input type="text" value={page.heroTitleColor || '#fff'} onChange={e => setPage({ ...page, heroTitleColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                                </div>
-                              </div>
-                                )}
-                              </div>
-                              {/* Hero Location Section */}
-                              <div className="mb-6 bg-cyan-50 border-2 border-cyan-200 rounded-xl shadow-lg p-4">
-                                <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowLocation(v => !v)}>
-                                  <span className="text-xl font-extrabold text-cyan-800">Hero Location</span>
-                                  <span className={`transform transition-transform duration-200 ${showLocation ? 'rotate-180' : ''}`}>▼</span>
-                                </button>
-                                {showLocation && (
-                                  <div className="pl-2 pt-2 flex flex-col gap-4">
-                                    <input className="w-full font-semibold text-primary-600 bg-transparent border-b border-primary-200 focus:outline-none mb-2" value={page.location || ''} onChange={e => setPage({ ...page, location: e.target.value })} placeholder="Location" />
-                                <div className="flex items-center gap-4">
-                                  <input type="color" value={page.heroLocationColor || '#38bdf8'} onChange={e => setPage({ ...page, heroLocationColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                  <input type="text" value={page.heroLocationColor || '#38bdf8'} onChange={e => setPage({ ...page, heroLocationColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#38bdf8" />
-                                </div>
-                              </div>
-                                )}
-                              </div>
-                              {/* Hero Subtitle Section */}
-                              <div className="mb-6 bg-fuchsia-50 border-2 border-fuchsia-200 rounded-xl shadow-lg p-4">
-                                <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowSubtitle(v => !v)}>
-                                  <span className="text-xl font-extrabold text-fuchsia-800">Hero Subtitle</span>
-                                  <span className={`transform transition-transform duration-200 ${showSubtitle ? 'rotate-180' : ''}`}>▼</span>
-                                </button>
-                                {showSubtitle && (
-                                  <div className="pl-2 pt-2 flex flex-col gap-4">
-                                    <input className="w-full font-semibold text-primary-600 bg-transparent border-b border-primary-200 focus:outline-none mb-2" value={page.subtitle2 || ''} onChange={e => setPage({ ...page, subtitle2: e.target.value })} placeholder="Subtitle" />
-                                <div className="flex items-center gap-4">
-                                  <input type="color" value={page.heroSubtitleColor || '#fff'} onChange={e => setPage({ ...page, heroSubtitleColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                  <input type="text" value={page.heroSubtitleColor || '#fff'} onChange={e => setPage({ ...page, heroSubtitleColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                                </div>
-                              </div>
-                                )}
-                              </div>
-                              {/* Hero Content Section */}
-                              <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-xl shadow-lg p-4">
-                                <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowContent(v => !v)}>
-                                  <span className="text-xl font-extrabold text-blue-800">Hero Content</span>
-                                  <span className={`transform transition-transform duration-200 ${showContent ? 'rotate-180' : ''}`}>▼</span>
-                                </button>
-                                {showContent && (
-                                  <div className="pl-2 pt-2 flex flex-col gap-4">
-                                    <textarea className="w-full text-primary-600 bg-transparent border-b border-primary-200 focus:outline-none mb-2" value={page.content || ''} onChange={e => setPage({ ...page, content: e.target.value })} placeholder="Content" />
-                                <div className="flex items-center gap-4">
-                                  <input type="color" value={page.heroContentColor || '#fff'} onChange={e => setPage({ ...page, heroContentColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                  <input type="text" value={page.heroContentColor || '#fff'} onChange={e => setPage({ ...page, heroContentColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                                </div>
-                              </div>
-                                )}
-                              </div>
-                              {/* Hero Gradients Section */}
-                              <div className="mb-6 bg-indigo-50 border-2 border-indigo-200 rounded-xl shadow-lg p-4">
-                                <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowGradients(v => !v)}>
-                                  <span className="text-xl font-extrabold text-indigo-800">Hero Gradients</span>
-                                  <span className={`transform transition-transform duration-200 ${showGradients ? 'rotate-180' : ''}`}>▼</span>
-                                </button>
-                                {showGradients && (
-                                  <div className="pl-2 pt-2 flex flex-col gap-4">
-                                <div className="flex items-center gap-4">
-                                  <label className="w-32">Top:</label>
-                                  <input type="color" value={page.heroGradientTop || '#2563eb'} onChange={e => setPage({ ...page, heroGradientTop: e.target.value })} className="w-10 h-10 border rounded" />
-                                  <input type="text" value={page.heroGradientTop || '#2563eb'} onChange={e => setPage({ ...page, heroGradientTop: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#2563eb" />
-                                </div>
-                                <div className="flex items-center gap-4">
-                                  <label className="w-32">Middle:</label>
-                                  <input type="color" value={page.heroGradientMiddle || '#1d4ed8'} onChange={e => setPage({ ...page, heroGradientMiddle: e.target.value })} className="w-10 h-10 border rounded" />
-                                  <input type="text" value={page.heroGradientMiddle || '#1d4ed8'} onChange={e => setPage({ ...page, heroGradientMiddle: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#1d4ed8" />
-                                </div>
-                                <div className="flex items-center gap-4">
-                                  <label className="w-32">Bottom:</label>
-                                  <input type="color" value={page.heroGradientBottom || '#1e293b'} onChange={e => setPage({ ...page, heroGradientBottom: e.target.value })} className="w-10 h-10 border rounded" />
-                                  <input type="text" value={page.heroGradientBottom || '#1e293b'} onChange={e => setPage({ ...page, heroGradientBottom: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#1e293b" />
-                                </div>
-                                <div className="flex items-center gap-4">
-                                  <label className="w-32">Left:</label>
-                                  <input type="color" value={page.heroGradientLeft || '#1e293b'} onChange={e => setPage({ ...page, heroGradientLeft: e.target.value })} className="w-10 h-10 border rounded" />
-                                  <input type="text" value={page.heroGradientLeft || '#1e293b'} onChange={e => setPage({ ...page, heroGradientLeft: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#1e293b" />
-                                </div>
-                              </div>
-                                )}
-                              </div>
-                              {/* Hero Schedule Button Section */}
-                              <div className="mb-6 bg-green-50 border-2 border-green-200 rounded-xl shadow-lg p-4">
-                                <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowSchedule(v => !v)}>
-                                  <span className="text-xl font-extrabold text-green-800">Schedule Button</span>
-                                  <span className={`transform transition-transform duration-200 ${showSchedule ? 'rotate-180' : ''}`}>▼</span>
-                                </button>
-                                {showSchedule && (
-                                  <div className="pl-2 pt-2 flex flex-col gap-4">
-                                <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-green-800">Button Color:</label>
-                                      <input type="color" value={page.heroScheduleButtonColor || '#25eb71'} onChange={e => setPage({ ...page, heroScheduleButtonColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroScheduleButtonColor || '#25eb71'} onChange={e => setPage({ ...page, heroScheduleButtonColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#25eb71" />
-                                </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-green-800">Text Color:</label>
-                                  <input type="color" value={page.heroScheduleButtonTextColor || '#fff'} onChange={e => setPage({ ...page, heroScheduleButtonTextColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                  <input type="text" value={page.heroScheduleButtonTextColor || '#fff'} onChange={e => setPage({ ...page, heroScheduleButtonTextColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                                </div>
-                              </div>
-                                )}
-                            </div>
-                              {/* Hero Contact Us Button Section */}
-                              <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-xl shadow-lg p-4">
-                                <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowContact(v => !v)}>
-                                  <span className="text-xl font-extrabold text-blue-800">Contact Us Button</span>
-                                  <span className={`transform transition-transform duration-200 ${showContact ? 'rotate-180' : ''}`}>▼</span>
-                                </button>
-                                {showContact && (
-                                  <div className="pl-2 pt-2 flex flex-col gap-4">
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Button Color:</label>
-                                      <input type="color" value={page.heroContactButtonColor || '#fff'} onChange={e => setPage({ ...page, heroContactButtonColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroContactButtonColor || '#fff'} onChange={e => setPage({ ...page, heroContactButtonColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                          </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Text Color:</label>
-                                      <input type="color" value={page.heroContactButtonTextColor || '#1c91d7'} onChange={e => setPage({ ...page, heroContactButtonTextColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroContactButtonTextColor || '#1c91d7'} onChange={e => setPage({ ...page, heroContactButtonTextColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#1c91d7" />
-                          </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Border Color:</label>
-                                      <input type="color" value={page.heroContactButtonBorderColor || '#fff'} onChange={e => setPage({ ...page, heroContactButtonBorderColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroContactButtonBorderColor || '#fff'} onChange={e => setPage({ ...page, heroContactButtonBorderColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                            </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Hover BG Color:</label>
-                                      <input type="color" value={page.heroContactButtonHoverBgColor || '#f5cb1a'} onChange={e => setPage({ ...page, heroContactButtonHoverBgColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroContactButtonHoverBgColor || '#f5cb1a'} onChange={e => setPage({ ...page, heroContactButtonHoverBgColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#f5cb1a" />
-                            </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Hover Text Color:</label>
-                                      <input type="color" value={page.heroContactButtonHoverTextColor || '#1787c9'} onChange={e => setPage({ ...page, heroContactButtonHoverTextColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroContactButtonHoverTextColor || '#1787c9'} onChange={e => setPage({ ...page, heroContactButtonHoverTextColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#1787c9" />
-                          </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Hover Border Color:</label>
-                                      <input type="color" value={page.heroContactButtonHoverBorderColor || '#1787c9'} onChange={e => setPage({ ...page, heroContactButtonHoverBorderColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroContactButtonHoverBorderColor || '#1787c9'} onChange={e => setPage({ ...page, heroContactButtonHoverBorderColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#1787c9" />
-                            </div>
-                          </div>
-                                )}
-                              </div>
-                              {/* Hero Free Estimates Card Section */}
-                              <div className="mb-6 bg-cyan-50 border-2 border-cyan-200 rounded-xl shadow-lg p-4">
-                                <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowEstimates(v => !v)}>
-                                  <span className="text-xl font-extrabold text-cyan-800">Hero Box 1</span>
-                                  <span className={`transform transition-transform duration-200 ${showEstimates ? 'rotate-180' : ''}`}>▼</span>
-                                </button>
-                                {showEstimates && (
-                                  <div className="pl-2 pt-2 flex flex-col gap-4">
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-cyan-800">Box BG Color:</label>
-                                      <input type="color" value={page.heroBox1BgColor || '#387e62'} onChange={e => setPage({ ...page, heroBox1BgColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox1BgColor || '#387e62'} onChange={e => setPage({ ...page, heroBox1BgColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#387e62" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-cyan-800">Text Color:</label>
-                                      <input type="color" value={page.heroBox1TextColor || '#fff'} onChange={e => setPage({ ...page, heroBox1TextColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox1TextColor || '#fff'} onChange={e => setPage({ ...page, heroBox1TextColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-cyan-800">Border Color:</label>
-                                      <input type="color" value={page.heroBox1BorderColor || '#387e62'} onChange={e => setPage({ ...page, heroBox1BorderColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox1BorderColor || '#387e62'} onChange={e => setPage({ ...page, heroBox1BorderColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#387e62" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-cyan-800">Hover BG Color:</label>
-                                      <input type="color" value={page.heroBox1HoverBgColor || '#2e6b54'} onChange={e => setPage({ ...page, heroBox1HoverBgColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox1HoverBgColor || '#2e6b54'} onChange={e => setPage({ ...page, heroBox1HoverBgColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#2e6b54" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-cyan-800">Hover Text Color:</label>
-                                      <input type="color" value={page.heroBox1HoverTextColor || '#fff'} onChange={e => setPage({ ...page, heroBox1HoverTextColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox1HoverTextColor || '#fff'} onChange={e => setPage({ ...page, heroBox1HoverTextColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-cyan-800">Hover Border Color:</label>
-                                      <input type="color" value={page.heroBox1HoverBorderColor || '#2e6b54'} onChange={e => setPage({ ...page, heroBox1HoverBorderColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox1HoverBorderColor || '#2e6b54'} onChange={e => setPage({ ...page, heroBox1HoverBorderColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#2e6b54" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-cyan-800">Icon BG Color:</label>
-                                      <input type="color" value={page.heroBox1IconBgColor || '#31937a'} onChange={e => setPage({ ...page, heroBox1IconBgColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox1IconBgColor || '#31937a'} onChange={e => setPage({ ...page, heroBox1IconBgColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#31937a" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-cyan-800">Icon Color:</label>
-                                      <input type="color" value={page.heroBox1IconColor || '#fff'} onChange={e => setPage({ ...page, heroBox1IconColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox1IconColor || '#fff'} onChange={e => setPage({ ...page, heroBox1IconColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              {/* Hero Box 2 Section */}
-                              <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-xl shadow-lg p-4">
-                                <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowExpertTechs(v => !v)}>
-                                  <span className="text-xl font-extrabold text-blue-800">Hero Box 2</span>
-                                  <span className={`transform transition-transform duration-200 ${showExpertTechs ? 'rotate-180' : ''}`}>▼</span>
-                                </button>
-                                {showExpertTechs && (
-                                  <div className="pl-2 pt-2 flex flex-col gap-4">
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Box BG Color:</label>
-                                      <input type="color" value={page.heroBox2BgColor || '#25647a'} onChange={e => setPage({ ...page, heroBox2BgColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox2BgColor || '#25647a'} onChange={e => setPage({ ...page, heroBox2BgColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#25647a" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Text Color:</label>
-                                      <input type="color" value={page.heroBox2TextColor || '#fff'} onChange={e => setPage({ ...page, heroBox2TextColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox2TextColor || '#fff'} onChange={e => setPage({ ...page, heroBox2TextColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Border Color:</label>
-                                      <input type="color" value={page.heroBox2BorderColor || '#25647a'} onChange={e => setPage({ ...page, heroBox2BorderColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox2BorderColor || '#25647a'} onChange={e => setPage({ ...page, heroBox2BorderColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#25647a" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Hover BG Color:</label>
-                                      <input type="color" value={page.heroBox2HoverBgColor || '#17475a'} onChange={e => setPage({ ...page, heroBox2HoverBgColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox2HoverBgColor || '#17475a'} onChange={e => setPage({ ...page, heroBox2HoverBgColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#17475a" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Hover Text Color:</label>
-                                      <input type="color" value={page.heroBox2HoverTextColor || '#fff'} onChange={e => setPage({ ...page, heroBox2HoverTextColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox2HoverTextColor || '#fff'} onChange={e => setPage({ ...page, heroBox2HoverTextColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Hover Border Color:</label>
-                                      <input type="color" value={page.heroBox2HoverBorderColor || '#17475a'} onChange={e => setPage({ ...page, heroBox2HoverBorderColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox2HoverBorderColor || '#17475a'} onChange={e => setPage({ ...page, heroBox2HoverBorderColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#17475a" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Icon BG Color:</label>
-                                      <input type="color" value={page.heroBox2IconBgColor || '#1e5a7a'} onChange={e => setPage({ ...page, heroBox2IconBgColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox2IconBgColor || '#1e5a7a'} onChange={e => setPage({ ...page, heroBox2IconBgColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#1e5a7a" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Icon Color:</label>
-                                      <input type="color" value={page.heroBox2IconColor || '#fff'} onChange={e => setPage({ ...page, heroBox2IconColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox2IconColor || '#fff'} onChange={e => setPage({ ...page, heroBox2IconColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              {/* Hero Box 3 Section */}
-                              <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-xl shadow-lg p-4">
-                                <button className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none" onClick={() => setShowExpertTechs(v => !v)}>
-                                  <span className="text-xl font-extrabold text-blue-800">Hero Box 3</span>
-                                  <span className={`transform transition-transform duration-200 ${showExpertTechs ? 'rotate-180' : ''}`}>▼</span>
-                                </button>
-                                {showExpertTechs && (
-                                  <div className="pl-2 pt-2 flex flex-col gap-4">
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Box BG Color:</label>
-                                      <input type="color" value={page.heroBox3BgColor || '#25647a'} onChange={e => setPage({ ...page, heroBox3BgColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox3BgColor || '#25647a'} onChange={e => setPage({ ...page, heroBox3BgColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#25647a" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Text Color:</label>
-                                      <input type="color" value={page.heroBox3TextColor || '#fff'} onChange={e => setPage({ ...page, heroBox3TextColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox3TextColor || '#fff'} onChange={e => setPage({ ...page, heroBox3TextColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Border Color:</label>
-                                      <input type="color" value={page.heroBox3BorderColor || '#25647a'} onChange={e => setPage({ ...page, heroBox3BorderColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox3BorderColor || '#25647a'} onChange={e => setPage({ ...page, heroBox3BorderColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#25647a" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Hover BG Color:</label>
-                                      <input type="color" value={page.heroBox3HoverBgColor || '#17475a'} onChange={e => setPage({ ...page, heroBox3HoverBgColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox3HoverBgColor || '#17475a'} onChange={e => setPage({ ...page, heroBox3HoverBgColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#17475a" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Hover Text Color:</label>
-                                      <input type="color" value={page.heroBox3HoverTextColor || '#fff'} onChange={e => setPage({ ...page, heroBox3HoverTextColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox3HoverTextColor || '#fff'} onChange={e => setPage({ ...page, heroBox3HoverTextColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Hover Border Color:</label>
-                                      <input type="color" value={page.heroBox3HoverBorderColor || '#17475a'} onChange={e => setPage({ ...page, heroBox3HoverBorderColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox3HoverBorderColor || '#17475a'} onChange={e => setPage({ ...page, heroBox3HoverBorderColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#17475a" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Icon BG Color:</label>
-                                      <input type="color" value={page.heroBox3IconBgColor || '#1e5a7a'} onChange={e => setPage({ ...page, heroBox3IconBgColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox3IconBgColor || '#1e5a7a'} onChange={e => setPage({ ...page, heroBox3IconBgColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#1e5a7a" />
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                      <label className="text-sm font-medium text-blue-800">Icon Color:</label>
-                                      <input type="color" value={page.heroBox3IconColor || '#fff'} onChange={e => setPage({ ...page, heroBox3IconColor: e.target.value })} className="w-10 h-10 border rounded" />
-                                      <input type="text" value={page.heroBox3IconColor || '#fff'} onChange={e => setPage({ ...page, heroBox3IconColor: e.target.value })} className="ml-2 text-xs border rounded px-2 py-1 w-20" maxLength={7} placeholder="#fff" />
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div> {/* <-- Close the grid for hero section config */}
-                          </div> {/* <-- Close the white/rounded hero section card */}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
         </div>
-      </section>
+      )}
 
-      {/* Save/Reset Buttons */}
-      <div className="flex gap-4 mt-10">
-        <button className="px-6 py-2 bg-primary-600 text-white rounded shadow font-bold hover:bg-primary-700" onClick={handleSave}>Save</button>
-        <button className="px-6 py-2 bg-gray-200 text-gray-700 rounded shadow font-bold hover:bg-gray-300" onClick={handleReset}>Reset</button>
-        <button className="px-6 py-2 bg-blue-200 text-blue-700 rounded shadow font-bold hover:bg-blue-300" onClick={handleExport}>Export</button>
-      </div>
+      {/* Back to Top Button - Mobile Only */}
+      {isMobileDevice && showBackToTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 p-3 rounded-full shadow-lg z-50 text-white"
+          style={{ background: 'var(--theme-color)' }}
+          aria-label="Back to top"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+          </svg>
+        </button>
+      )}
     </div>
-  </main>
-);
-} 
+  );
+}

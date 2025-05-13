@@ -5,7 +5,20 @@
 @layer base {
   :root {
     --foreground-rgb: 0, 0, 0;
-    --background-rgb: 255, 255, 255;
+    --background-start-rgb: 214, 219, 220;
+    --background-end-rgb: 255, 255, 255;
+    /* Theme color variables with defaults */
+    --theme-color: #a259e6;
+    --theme-color-light: #a259e622;
+
+    /* Schedule Section Variables */
+    --schedule-badge-bg: var(--config-schedule-badge-bg);
+    --schedule-badge-text: var(--config-schedule-badge-text);
+    --schedule-title: var(--config-schedule-title);
+    --schedule-highlight: var(--config-schedule-highlight);
+    --schedule-subtitle: var(--config-schedule-subtitle);
+    --schedule-gradient-top: var(--config-schedule-gradient-top);
+    --schedule-gradient-bottom: var(--config-schedule-gradient-bottom);
   }
 
   html {
@@ -18,16 +31,74 @@
   body {
     min-height: 100%;
     color: rgb(var(--foreground-rgb));
-    background: rgb(var(--background-rgb));
+    background: rgb(var(--background-end-rgb));
     overflow-x: hidden;
   }
 
   ::selection {
     @apply bg-primary-600/20 text-primary-900;
   }
+
+  /* Form controls with proper contrast */
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="password"],
+  input:not([type]),
+  textarea,
+  select {
+    @apply border-gray-300 bg-white text-gray-900;
+  }
+  
+  /* Dropdown icons and section titles */
+  .dropdown-arrow {
+    @apply text-gray-900;
+  }
+  
+  /* Section headings */
+  h2.section-title, 
+  h3.section-title {
+    @apply text-gray-900;
+  }
 }
 
 @layer components {
+  /* Theme-color dependent components */
+  .theme-gradient-bg {
+    background: linear-gradient(135deg, var(--theme-color), var(--theme-color-light));
+  }
+  
+  .theme-border {
+    border-color: var(--theme-color-light);
+  }
+  
+  .theme-text {
+    color: var(--theme-color);
+  }
+
+  /* Configuration interface specific styles - ensuring dark text on light backgrounds */
+  .config-interface input,
+  .config-interface select,
+  .config-interface textarea,
+  .config-interface label,
+  .config-interface button:not([class*="bg-"]),
+  .config-interface h1,
+  .config-interface h2,
+  .config-interface h3,
+  .config-interface h4,
+  .config-interface h5,
+  .config-interface h6,
+  .config-interface p,
+  .config-interface span:not([class*="text-"]) {
+    color: #111827; /* Force dark text */
+  }
+  
+  .config-interface .dropdown-arrow {
+    color: #111827 !important; /* Force dark dropdown arrows */
+  }
+
   .hero-section {
     position: relative;
     background: url('/images/back3.png');
@@ -101,6 +172,15 @@
   .btn-primary {
     @apply bg-primary-600 text-white hover:bg-primary-700 shadow-lg hover:shadow-xl;
   }
+  
+  .btn-theme {
+    background-color: var(--theme-color);
+    color: white;
+  }
+  
+  .btn-theme:hover {
+    filter: brightness(90%);
+  }
 
   .btn-outline {
     @apply border-2 border-white/80 text-white hover:bg-white hover:text-primary-900;
@@ -117,6 +197,39 @@
 
   .animation-delay-4000 {
     animation-delay: 4s;
+  }
+
+  .shimmer-bg {
+    background: linear-gradient(135deg, rgba(156,163,175,0.18) 0%, rgba(209,213,219,0.08) 40%, rgba(156,163,175,0.18) 100%);
+    background-size: 200% 200%;
+    animation: shimmer-diag 4s infinite linear;
+  }
+
+  .pulse-cta {
+    animation: pulse-cta 1.5s infinite;
+  }
+
+  .calendar-ripple-bg {
+    background-size: 200% 200%;
+    animation: ripple-move 8s linear infinite;
+    transition: background 0.5s;
+  }
+
+  .calendar-shimmer-bg {
+    position: absolute;
+    inset: 0;
+    border-radius: 1.5rem;
+    background: linear-gradient(
+      120deg,
+      transparent 30%,
+      rgba(255,255,255,0.18) 45%,
+      rgba(255,255,255,0.38) 50%,
+      rgba(255,255,255,0.18) 55%,
+      transparent 70%
+    );
+    background-size: 200% 200%;
+    animation: shimmer-diag 2.5s linear infinite;
+    pointer-events: none;
   }
 }
 
@@ -162,4 +275,39 @@
   100% {
     transform: translate(0px, 0px) scale(1);
   }
+}
+
+@keyframes shimmer-diag {
+  0% { background-position: -120% -120%; }
+  100% { background-position: 120% 120%; }
+}
+
+@keyframes pulse-cta {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.08); }
+}
+
+@keyframes ripple-move {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+}
+
+.hover-zoom {
+  transition: transform 0.3s ease;
+}
+
+.hover-zoom:hover {
+  transform: scale(1.05);
 } 
