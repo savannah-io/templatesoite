@@ -8,7 +8,9 @@ import ServiceReel from '../components/ServiceReel'
 import Image from 'next/image'
 import Script from 'next/script'
 import { useConfig } from '../context/ConfigContext'
-import React from 'react'
+import React, { useState, useEffect } from 'react'
+import { disableReloadWarning } from '../utils/preventReloadWarning'
+import Modal from '../components/Modal'
 
 // Add Calendly type declaration
 declare global {
@@ -36,6 +38,25 @@ function hexToRgba(hex: string, alpha: number) {
 export default function Home() {
   // Get the config object from context
   const config = useConfig();
+  // State to track client-side rendering
+  const [isClient, setIsClient] = useState(false);
+  // State for instructions modal
+  const [showInstructions, setShowInstructions] = useState(false);
+  
+  // Set isClient to true once component mounts on client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  // Instructions content
+  const instructionsContent = [
+    { title: "Tree Removal Services", content: "We provide professional tree removal services for residential and commercial properties." },
+    { title: "Expert Arborists", content: "Our team of certified arborists ensures safe and efficient tree removal." },
+    { title: "Free Estimates", content: "Contact us today to schedule a free estimate for your tree removal needs." },
+    { title: "Emergency Services", content: "We offer 24/7 emergency tree removal services for storm damage and hazardous trees." },
+    { title: "Fully Insured", content: "All our services are fully insured for your peace of mind." }
+  ];
+  
   // Debug log to see what config is loaded
   console.log('Config in Home:', config);
   // Home page content from config
@@ -51,9 +72,25 @@ export default function Home() {
   const infoBar = config?.infoBar || {};
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen" suppressHydrationWarning>
       {/* Header (no config prop) */}
       <Header />
+      
+      {/* Instructions Modal */}
+      <Modal 
+        isOpen={showInstructions} 
+        onClose={() => setShowInstructions(false)}
+        title="Services Information"
+      >
+        <div className="space-y-6">
+          {instructionsContent.map((item, index) => (
+            <div key={index}>
+              <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
+              <p>{item.content}</p>
+            </div>
+          ))}
+        </div>
+      </Modal>
       
       {/* Hero Section - all content from config */}
       <section
@@ -98,7 +135,7 @@ export default function Home() {
 
         <div className="container mx-auto px-4 relative z-20 h-full flex items-center">
           <motion.div 
-            className="hero-content max-w-3xl md:py-12"
+            className="hero-content max-w-3xl md:py-12 w-full"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
@@ -109,10 +146,10 @@ export default function Home() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 }}
-                className="mb-8 inline-block"
+                className="mb-6 sm:mb-8 inline-block"
               >
                 <span
-                  className="px-5 py-2.5 rounded-full text-sm font-semibold tracking-wider uppercase shadow-lg backdrop-blur-sm"
+                  className="px-4 py-2 rounded-full text-xs sm:text-sm font-semibold tracking-wider uppercase shadow-lg backdrop-blur-sm"
                   style={{ background: home.heroBadgeColor || '#1787c9', color: home.heroBadgeTitleColor || '#fff' }}
                 >
                   {home.badge}
@@ -120,11 +157,24 @@ export default function Home() {
               </motion.div>
             )}
             {/* Title and location from config */}
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-display font-extrabold mb-8 leading-[1.1] drop-shadow-xl">
+            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-display font-extrabold mb-4 sm:mb-8 leading-[1.1] drop-shadow-xl text-left">
+              <div className="flex items-center">
               <span style={{ color: home.heroTitleColor || '#fff' }}>{home.title}</span>
+                <div 
+                  onClick={() => setShowInstructions(true)}
+                  className="relative ml-3 cursor-pointer group"
+                >
+                  <div className="h-8 w-8 rounded-full bg-white/30 flex items-center justify-center hover:bg-white/40 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="absolute inset-0 rounded-full bg-white/20 animate-ping opacity-75 duration-1000" style={{ animationIterationCount: 'infinite', animationDuration: '2s' }}></div>
+                </div>
+              </div>
               {home.location && (
                 <span
-                  className="drop-shadow-xl font-extrabold"
+                  className="drop-shadow-xl font-extrabold block sm:inline"
                   style={{ color: home.heroLocationColor || '#38bdf8' }}
                 >
                   {home.location}
@@ -132,7 +182,7 @@ export default function Home() {
               )}
             </h1>
             {/* Main content and subtitle from config */}
-            <div className="text-xl mb-12 max-w-2xl leading-relaxed drop-shadow-lg font-medium"
+            <div className="text-base sm:text-xl mb-6 sm:mb-12 max-w-2xl leading-relaxed drop-shadow-lg font-medium text-left"
                  style={{ color: home.heroContentColor || '#fff' }}>
               {home.content && (
                 <div>
@@ -140,18 +190,18 @@ export default function Home() {
                 </div>
               )}
               {home.subtitle2 && (
-                <span className="hidden sm:inline" style={{ color: home.heroSubtitleColor || '#fff' }}> {home.subtitle2}</span>
+                <span className="block sm:inline" style={{ color: home.heroSubtitleColor || '#fff' }}> {home.subtitle2}</span>
               )}
             </div>
-            {/* Scheduling button text from config */}
-            <div className="flex flex-col sm:flex-row gap-6">
+            {/* Scheduling and Contact buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 w-full items-start justify-start mb-8">
               <motion.a
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
                   document.getElementById('schedule')?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="inline-flex items-center justify-center px-10 py-5 min-w-[220px] rounded-lg font-semibold text-xl transition-all duration-300 shadow-xl hover:shadow-2xl relative group overflow-hidden"
+                className="inline-flex items-center justify-center w-full sm:w-auto px-6 sm:px-20 py-3 sm:py-4 min-w-[140px] sm:min-w-[320px] rounded-lg font-semibold text-base sm:text-2xl transition-all duration-300 shadow-xl hover:shadow-2xl relative group overflow-hidden text-left"
                 style={{
                   background: home.heroScheduleButtonColor || '#2563eb',
                   color: home.heroScheduleButtonTextColor || '#fff',
@@ -164,7 +214,7 @@ export default function Home() {
               </motion.a>
               <motion.a
                 href="/contact"
-                className="inline-flex items-center justify-center px-10 py-5 min-w-[220px] rounded-lg font-semibold text-xl transition-all duration-300 shadow-xl hover:shadow-2xl relative group overflow-hidden"
+                className="inline-flex items-center justify-center w-full sm:w-auto px-6 sm:px-20 py-3 sm:py-4 min-w-[140px] sm:min-w-[320px] rounded-lg font-semibold text-base sm:text-2xl transition-all duration-300 shadow-xl hover:shadow-2xl relative group overflow-hidden text-left"
                 style={{
                   background: home.heroContactButtonColor || '#fff',
                   color: home.heroContactButtonTextColor || '#1787c9',
@@ -188,123 +238,134 @@ export default function Home() {
                 <ArrowRightIcon className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </motion.a>
             </div>
-            <div className="container mx-auto flex justify-start">
-              <motion.div 
-                className="mt-16 flex flex-col sm:flex-row sm:flex-nowrap sm:justify-start gap-8"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-              >
+            {/* Hero boxes - single column on mobile, fixed width and aligned on desktop */}
+            <div className="flex flex-col sm:flex-row sm:justify-start gap-4 sm:gap-6 w-full items-center">
                 {[
                   { icon: <ShieldCheckIcon className="w-7 h-7" />, text: "Free Estimates" },
                   { icon: <SparklesIcon className="w-7 h-7" />, text: "Expert Technicians" },
                   { icon: <ClockIcon className="w-7 h-7" />, text: "Quick Turnaround" }
-                ].map((item, index) => {
-                  const boxNum = index + 1;
-                  const boxBg = home[`heroBox${boxNum}BgColor`] || '#25647a';
-                  const textColor = home[`heroBox${boxNum}TextColor`] || '#fff';
-                  const borderColor = home[`heroBox${boxNum}BorderColor`] || '#25647a';
-                  const iconBg = home[`heroBox${boxNum}IconBgColor`] || 'rgba(255,255,255,0.1)';
-                  const iconColor = home[`heroBox${boxNum}IconColor`] || '#fff';
-                  return (
+              ].map((item, index) => {
+                const boxNum = index + 1;
+                const boxBg = home[`heroBox${boxNum}BgColor`] || '#25647a';
+                const textColor = home[`heroBox${boxNum}TextColor`] || '#fff';
+                const borderColor = home[`heroBox${boxNum}BorderColor`] || '#25647a';
+                const iconBg = home[`heroBox${boxNum}IconBgColor`] || 'rgba(255,255,255,0.1)';
+                const iconColor = home[`heroBox${boxNum}IconColor`] || '#fff';
+                return (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl border backdrop-blur-md transition-all duration-300 w-full sm:w-auto flex-1 mb-4 sm:mb-0"
+                    style={{
+                      background: boxBg,
+                      borderColor: borderColor,
+                    }}
+                  >
                     <div
-                      key={index}
-                      className="flex items-center gap-4 px-8 py-6 rounded-2xl shadow-xl border backdrop-blur-md transition-all duration-300 w-full sm:w-80"
-                      style={{
-                        background: boxBg,
-                        borderColor: borderColor,
-                      }}
+                      className="p-2 rounded-xl flex items-center justify-center"
+                      style={{ background: iconBg }}
                     >
-                      <div
-                        className="p-3 rounded-xl flex items-center justify-center"
-                        style={{ background: iconBg }}
-                      >
-                        {React.cloneElement(item.icon, { style: { color: iconColor } })}
-                      </div>
-                      <span
-                        className="font-bold text-lg tracking-wide whitespace-nowrap"
-                        style={{ color: textColor }}
-                      >
-                        {item.text}
-                      </span>
+                      {React.cloneElement(item.icon, { style: { color: iconColor } })}
                     </div>
-                  );
-                })}
-              </motion.div>
+                    <span
+                      className="font-bold text-base sm:text-lg tracking-wide whitespace-nowrap"
+                      style={{ color: textColor }}
+                    >
+                      {item.text}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Booking Section */}
-      <section id="schedule" className="py-16 relative overflow-hidden bg-gray-50">
-        <div className="container mx-auto px-4 relative z-10">
-          {/* Header */}
-          <div className="text-center mb-10">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="inline-block px-4 py-1.5 mb-3 text-sm font-semibold tracking-wider text-primary-700 uppercase bg-primary-50/80 backdrop-blur-sm rounded-full shadow-sm border border-primary-100/50"
-            >
-              BOOK YOUR SERVICE
-            </motion.div>
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="text-4xl md:text-5xl font-display font-bold mb-4"
-            >
-              Schedule Your{' '}
-              <span className="relative inline-block">
-                <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-800">
-                  Auto Estimate
-                </span>
-                <span className="absolute -bottom-2 left-0 w-full h-3 bg-primary-100/80 -rotate-1"></span>
-              </span>
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto"
-            >
-              Book your appointment with our expert technicians. We&apos;ll get your vehicle back to its best condition.
-            </motion.p>
+      {/* Schedule Section */}
+      <section className="py-16 bg-gradient-to-b from-[var(--schedule-gradient-top)] to-[var(--schedule-gradient-bottom)]">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl flex flex-col md:flex-row overflow-hidden p-0 md:p-0">
+            {/* Left: Info */}
+            <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center items-start">
+              <div className="flex items-center mb-8">
+                <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center mr-6 shadow-lg">
+                  {/* Blue icon, can be replaced with your logo if desired */}
+                  <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#fff"/><path d="M12 7v6m0 0l-2-2m2 2l2-2" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div>
+                  <div className="uppercase text-xs font-semibold text-gray-400 tracking-widest mb-1">BOOK YOUR SERVICE</div>
+                  <div className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-tight mb-1 text-left">
+                    Schedule Your <span className="text-blue-600">Auto Estimate</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-blue-600 font-semibold mb-2 text-base">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M12 2C7.03 2 3 6.03 3 11c0 5.25 7.5 11 9 11s9-5.75 9-11c0-4.97-4.03-9-9-9zm0 13.5c-2.48 0-4.5-2.02-4.5-4.5s2.02-4.5 4.5-4.5 4.5 2.02 4.5 4.5-2.02 4.5-4.5 4.5z" fill="#2563eb"/></svg>
+                <span className="font-bold">2785 Buford Hwy STE 101, Duluth, GA 30096</span>
+              </div>
+              <div className="text-gray-500 text-base leading-relaxed mt-2 text-left">
+                Book your appointment with our expert technicians. We'll get your vehicle back to its best condition.
+              </div>
           </div>
-
-          {/* Calendly Widget */}
-          <div className="bg-white rounded-2xl shadow-lg">
-            <div 
-              id="calendly-inline-widget" 
-              className="w-full rounded-2xl overflow-hidden"
+            {/* Right: Custom Calendar CTA */}
+            <div className="w-full md:w-1/2 flex items-center justify-center p-4 md:p-8">
+              <div className="relative w-full flex items-center justify-center" style={{ minHeight: '520px', minWidth: '420px', height: '520px', maxWidth: '520px' }}>
+                {/* Animated Ripple Gradient Background */}
+                <div
+                  className="absolute inset-0 rounded-2xl calendar-ripple-bg"
               style={{
-                width: '100%',
-                height: '700px',
-                border: 'none'
+                    background: `linear-gradient(120deg, ${
+                      isClient && config?.pages?.Home?.scheduleSection?.calendarRippleStartColor || '#4f46e5'
+                    } 0%, ${
+                      isClient && config?.pages?.Home?.scheduleSection?.calendarRippleEndColor || '#818cf8'
+                    } 100%)`,
+                    opacity: isClient && config?.pages?.Home?.scheduleSection?.calendarRippleOpacity || 0.15,
+                    zIndex: 0,
               }}
             ></div>
+                {/* Shimmer overlay */}
+                <div className="absolute inset-0 pointer-events-none z-10">
+                  <div className="calendar-shimmer-bg w-full h-full rounded-2xl"></div>
+                </div>
+                {/* Calendar SVG Illustration */}
+                <div className="w-full h-full flex items-center justify-center relative z-20">
+                  <svg width="320" height="320" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="30" y="60" width="260" height="220" rx="32" fill={
+                      isClient && config?.pages?.Home?.scheduleSection?.calendarBgColor || "#f9fafb"
+                    } stroke={
+                      isClient && config?.pages?.Home?.scheduleSection?.calendarBorderColor || "#4f46e5"
+                    } strokeWidth="6"/>
+                    <rect x="30" y="60" width="260" height="44" rx="16" fill={
+                      isClient && config?.pages?.Home?.scheduleSection?.calendarAccentColor || "#4f46e5"
+                    }/>
+                  </svg>
+                </div>
+                {/* Tap to Book Button Overlay */}
+                <button
+                  className="absolute inset-0 w-full h-full flex flex-col items-center justify-center rounded-2xl group focus:outline-none overflow-hidden"
+                  style={{ 
+                    cursor: 'pointer', 
+                    zIndex: 20 
+                  }}
+                  onClick={() => {
+                    if (isClient && config?.pages?.Home?.scheduleSection?.calendlyUrl) {
+                      window.open(config.pages.Home.scheduleSection.calendlyUrl, '_blank');
+                    }
+                  }}
+                  aria-label="Book Now"
+                >
+                  <span 
+                    className="relative z-10 text-white text-2xl font-bold mb-4 drop-shadow-lg pulse-cta" 
+                    style={{ 
+                      color: isClient && config?.pages?.Home?.scheduleSection?.tapToBookTextColor || "#ffffff"
+                    }}
+                  >
+                    {isClient && config?.pages?.Home?.scheduleSection?.tapToBookText || "Tap to Book"}
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* Calendly Widget Script */}
-        <Script
-          src="https://assets.calendly.com/assets/external/widget.js"
-          strategy="lazyOnload"
-          onLoad={() => {
-            if (typeof window !== 'undefined' && window.Calendly) {
-              window.Calendly.initInlineWidget({
-                url: 'https://calendly.com/taylorscollision/collision_estimate',
-                parentElement: document.getElementById('calendly-inline-widget'),
-                prefill: {},
-                utm: {},
-                branding: false
-              });
-            }
-          }}
-        />
       </section>
 
       {/* Trusted Brands Section */}
@@ -582,8 +643,8 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <span className="text-white">{reviewsConfig.title}</span>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-100">{reviewsConfig.highlight}</span>
+              <span className="text-white">{reviewsConfig?.title || "What Our Customers "}</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-100">{reviewsConfig?.highlight || "Are Saying"}</span>
             </motion.h2>
             <motion.p 
               className="text-lg md:text-xl text-blue-50 leading-relaxed mx-auto"
@@ -592,12 +653,12 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
             >
-              {reviewsConfig.subtitle}
+              {reviewsConfig?.subtitle || "See what our satisfied customers have to say about our service."}
             </motion.p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
-            {reviews.map((review: { text: string; author: string; rating: number }, index: number) => (
+            {(isClient ? reviews : []).slice(0, 3).map((review: { text: string; author: string; rating: number }, index: number) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
@@ -607,22 +668,53 @@ export default function Home() {
                 className="group relative bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:border-white/30 transition-all duration-200"
               >
                 <div className="flex text-yellow-400 mb-4">
-                  {[...Array(review.rating)].map((_, i) => (
+                  {[...Array(review?.rating || 5)].map((_, i) => (
                     <StarIcon key={i} className="h-5 w-5" />
                   ))}
                 </div>
-                <p className="text-white/90 mb-6 leading-relaxed">"{review.text}"</p>
+                <p className="text-white/90 mb-6 leading-relaxed">"{review?.text || "Great service!"}"</p>
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-500 flex items-center justify-center text-white font-medium">
-                    {review.author[0]}
+                    {(review?.author || "Customer")[0]}
                   </div>
                   <div>
-                    <p className="font-medium text-white">{review.author}</p>
+                    <p className="font-medium text-white">{review?.author || "Customer"}</p>
                     <p className="text-sm text-blue-200">Verified Customer</p>
                   </div>
                 </div>
               </motion.div>
             ))}
+            
+            {/* Show placeholder reviews if not loaded yet */}
+            {!isClient && (
+              <>
+                {[1, 2, 3].map((index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="group relative bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
+                  >
+                    <div className="flex text-yellow-400 mb-4">
+                      {[...Array(5)].map((_, i) => (
+                        <StarIcon key={i} className="h-5 w-5" />
+                      ))}
+                    </div>
+                    <p className="text-white/90 mb-6 leading-relaxed">"Great service and professional work!"</p>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-500 flex items-center justify-center text-white font-medium">
+                        C
+                      </div>
+                      <div>
+                        <p className="font-medium text-white">Customer</p>
+                        <p className="text-sm text-blue-200">Verified Customer</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </>
+            )}
           </div>
 
           <div className="text-center">
@@ -646,3 +738,14 @@ export default function Home() {
     </main>
   )
 }
+
+/* Add shimmer animation to globals.css if not present */
+// .shimmer-bg {
+//   background: linear-gradient(120deg, rgba(156,163,175,0.7) 0%, rgba(209,213,219,0.3) 40%, rgba(156,163,175,0.7) 100%);
+//   background-size: 200% 100%;
+//   animation: shimmer 2s infinite linear;
+// }
+// @keyframes shimmer {
+//   0% { background-position: -200% 0; }
+//   100% { background-position: 200% 0; }
+// }

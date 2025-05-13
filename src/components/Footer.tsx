@@ -1,11 +1,57 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { MapPinIcon, PhoneIcon, EnvelopeIcon, ClockIcon, UserGroupIcon } from '@heroicons/react/24/outline'
 import { usePrivacyPolicy, useTermsOfService } from './PolicyModals'
 import Image from 'next/image'
+import localConfig, { LocalConfig } from '@/config/localConfig'
+import { useConfig } from '@/context/ConfigContext'
+
+// Define interfaces for the configuration objects
+interface ContactInfo {
+  address?: string;
+  phone?: string;
+  email?: string;
+}
+
+interface Hours {
+  weekday?: string;
+  weekend?: string;
+}
+
+interface SocialLinks {
+  facebook?: string;
+  instagram?: string;
+  linkedin?: string;
+  twitter?: string;
+}
+
+// Define a FooterStyle interface for type safety
+interface FooterStyle {
+  backgroundColor?: string;
+  gradientFromColor?: string;
+  gradientToColor?: string;
+  titleColor?: string;
+  textColor?: string;
+  linkColor?: string;
+  linkHoverColor?: string;
+  socialIconColor?: string;
+  dividerColor?: string;
+  quickLinksTitleColor?: string;
+  contactInfoTitleColor?: string;
+  infoTitleColor?: string;
+  joinButtonBgColor?: string;
+  joinButtonTextColor?: string;
+  joinButtonHoverBgColor?: string;
+  hoursCardBgColor?: string;
+  hoursCardTextColor?: string;
+  hoursCardValueColor?: string;
+  copyrightTextColor?: string;
+  policyLinkColor?: string;
+  policyLinkHoverColor?: string;
+}
 
 // Add social icons imports
 const FacebookIcon = () => (
@@ -36,14 +82,28 @@ interface ShimmerLinkProps {
   href: string;
   children: React.ReactNode;
   className?: string;
+  textColor?: string;
+  hoverColor?: string;
 }
 
-const ShimmerLink = ({ href, children, className = "" }: ShimmerLinkProps) => (
+const ShimmerLink = ({ 
+  href, 
+  children, 
+  className = "",
+  textColor = "#4b5563",
+  hoverColor = "#4f46e5"
+}: ShimmerLinkProps) => (
   <Link 
     href={href}
     className={`group relative inline-block ${className}`}
   >
-    <span className="relative z-10 text-gray-600 transition-all duration-300 group-hover:text-primary-500 group-hover:translate-x-1 text-base">
+    <span 
+      className="relative z-10 transition-all duration-300 group-hover:translate-x-1 text-base" 
+      style={{ 
+        color: textColor,
+        "--hover-color": hoverColor
+      } as React.CSSProperties}
+    >
       {children}
     </span>
     <div className="absolute inset-0 -z-10 translate-y-[80%] group-hover:translate-y-[20%] opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-r from-transparent via-primary-500/10 to-transparent bg-[length:200%_100%] group-hover:animate-[shimmer_2s_infinite]" />
@@ -53,9 +113,181 @@ const ShimmerLink = ({ href, children, className = "" }: ShimmerLinkProps) => (
 export default function Footer() {
   const { openPrivacyPolicy, PrivacyPolicyModal } = usePrivacyPolicy()
   const { openTermsOfService, TermsOfServiceModal } = useTermsOfService()
+  
+  // Get the config from context
+  const configFromContext = useConfig();
+  
+  // Use state to manage config to ensure it's reactive and fresh
+  const [currentConfig, setCurrentConfig] = useState<LocalConfig>({...configFromContext})
+  
+  // Force refresh from context config whenever it changes
+  useEffect(() => {
+    // Function to get the latest config from all possible sources
+    const getLatestConfig = () => {
+      // Start with the context config
+      let latestConfig = {...configFromContext};
+      
+      // Try to get config from localStorage if available (might be more recent)
+      if (typeof window !== 'undefined') {
+        try {
+          const storedConfig = localStorage.getItem('siteConfig');
+          if (storedConfig) {
+            const parsedConfig = JSON.parse(storedConfig);
+            // Merge the configs, prioritizing the localStorage version
+            latestConfig = {
+              ...latestConfig,
+              ...parsedConfig
+            };
+          }
+        } catch (error) {
+          console.error('Error getting config from localStorage:', error);
+        }
+      }
+      
+      console.log('Footer getting latest config:', {
+        companyName: latestConfig.companyName,
+        navBarSiteTitle: latestConfig.navBar?.siteTitle,
+        footerLinks: latestConfig.footerLinks,
+        socialLinks: latestConfig.socialLinks,
+        contactInfo: latestConfig.contactInfo,
+        hours: latestConfig.hours
+      });
+      
+      return latestConfig;
+    };
+    
+    // Set the initial config from all sources
+    setCurrentConfig(getLatestConfig());
+    
+    // Set up event listeners for config changes
+    const handleConfigChange = () => {
+      console.log('Footer detected standard config change');
+      setCurrentConfig(getLatestConfig());
+    };
+    
+    // Handle the specific footer update event
+    const handleFooterConfigUpdate = (event: any) => {
+      console.log('Footer detected specific footer config update');
+      // If the event includes config detail, use it
+      if (event.detail && event.detail.config) {
+        setCurrentConfig(prevConfig => ({
+          ...prevConfig,
+          ...event.detail.config
+        }));
+      } else {
+        // Otherwise refresh from context
+        setCurrentConfig({...configFromContext});
+      }
+    };
+    
+    // Handle config saved event
+    const handleConfigSaved = (event: any) => {
+      console.log('Footer detected config save');
+      if (event.detail && event.detail.config) {
+        setCurrentConfig(prevConfig => ({
+          ...prevConfig,
+          ...event.detail.config
+        }));
+      } else {
+        setCurrentConfig({...configFromContext});
+      }
+    };
+    
+    // Handle full config update
+    const handleFullConfigUpdate = (event: any) => {
+      console.log('Footer detected full config update');
+      if (event.detail && event.detail.config) {
+        setCurrentConfig(prevConfig => ({
+          ...prevConfig,
+          ...event.detail.config
+        }));
+      } else {
+        setCurrentConfig({...configFromContext});
+      }
+    };
+
+    // Handle specific company name updates
+    const handleCompanyNameUpdate = (event: any) => {
+      console.log('Footer detected company name update:', event.detail);
+      if (event.detail && event.detail.companyName) {
+        setCurrentConfig(prevConfig => ({
+          ...prevConfig,
+          companyName: event.detail.companyName
+        }));
+      }
+    };
+
+    // Handle specific description updates
+    const handleDescriptionUpdate = (event: any) => {
+      console.log('Footer detected description update:', event.detail);
+      if (event.detail && event.detail.description) {
+        setCurrentConfig(prevConfig => ({
+          ...prevConfig,
+          description: event.detail.description
+        }));
+      }
+    };
+    
+    // Listen for all possible config events
+    document.addEventListener('config-published', handleConfigChange);
+    document.addEventListener('config-loaded', handleConfigChange);
+    document.addEventListener('footer-config-updated', handleFooterConfigUpdate);
+    document.addEventListener('config-saved', handleConfigSaved);
+    document.addEventListener('config-full-update', handleFullConfigUpdate);
+    document.addEventListener('footer-company-name-updated', handleCompanyNameUpdate);
+    document.addEventListener('footer-description-updated', handleDescriptionUpdate);
+    
+    return () => {
+      document.removeEventListener('config-published', handleConfigChange);
+      document.removeEventListener('config-loaded', handleConfigChange);
+      document.removeEventListener('footer-config-updated', handleFooterConfigUpdate);
+      document.removeEventListener('config-saved', handleConfigSaved);
+      document.removeEventListener('config-full-update', handleFullConfigUpdate);
+      document.removeEventListener('footer-company-name-updated', handleCompanyNameUpdate);
+      document.removeEventListener('footer-description-updated', handleDescriptionUpdate);
+    };
+  }, [configFromContext]);
+  
+  // Get data from currentConfig
+  const companyName = currentConfig.companyName || currentConfig.navBar?.siteTitle || "Davis Tree Removal";
+  const description = currentConfig.description || "A trusted tree removal service in Duluth, GA.";
+  const footerLinks = currentConfig.footerLinks || [];
+  const socialLinks: SocialLinks = typeof currentConfig.socialLinks === 'object' ? currentConfig.socialLinks as SocialLinks : {};
+  const contactInfo = currentConfig.contactInfo || {};
+  const hours = currentConfig.hours || {};
+  const showJoinTeamButton = currentConfig.showJoinTeamButton || false;
+  const joinTeamText = currentConfig.joinTeamText || "Join Our Team";
+  const joinTeamLink = currentConfig.joinTeamLink || "/careers";
+  const copyright = currentConfig.copyright || `© ${new Date().getFullYear()} ${companyName}. All rights reserved.`;
+  // Get footer styling with proper typing
+  const style = currentConfig.footerStyle || {} as FooterStyle;
+  const colors = {
+    gradientFrom: style.gradientFromColor || "#ffffff",
+    gradientTo: style.gradientToColor || "#f9fafb",
+    title: style.titleColor || "#4f46e5",
+    text: style.textColor || "#4b5563",
+    link: style.linkColor || "#4b5563",
+    linkHover: style.linkHoverColor || "#4f46e5",
+    socialIcon: style.socialIconColor || "#4f46e5",
+    divider: style.dividerColor || "rgba(79, 70, 229, 0.2)",
+    quickLinksTitle: style.quickLinksTitleColor || "#4f46e5",
+    contactInfoTitle: style.contactInfoTitleColor || "#4f46e5",
+    infoTitle: style.infoTitleColor || "#4f46e5",
+    joinButtonBg: style.joinButtonBgColor || "#4f46e5",
+    joinButtonText: style.joinButtonTextColor || "#ffffff",
+    joinButtonHoverBg: style.joinButtonHoverBgColor || "#4338ca",
+    hoursCardBg: style.hoursCardBgColor || "rgba(255, 255, 255, 0.6)",
+    hoursCardText: style.hoursCardTextColor || "#4b5563",
+    hoursCardValue: style.hoursCardValueColor || "#4f46e5",
+    copyrightText: style.copyrightTextColor || "#6b7280",
+    policyLink: style.policyLinkColor || "#6b7280",
+    policyLinkHover: style.policyLinkHoverColor || "#4f46e5"
+  };
 
   return (
-    <footer className="relative bg-gradient-to-b from-white to-gray-50">
+    <footer className="relative" style={{ 
+      background: `linear-gradient(to bottom, ${colors.gradientFrom}, ${colors.gradientTo})` 
+    }}>
       {/* Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl" />
@@ -72,8 +304,11 @@ export default function Footer() {
               viewport={{ once: true }}
               className="mb-2 flex items-center"
             >
-              <span className="text-gradient font-bold text-2xl md:text-3xl font-rubik block leading-tight select-none">
-                Taylor's Collision
+              <span 
+                className="font-bold text-2xl md:text-3xl font-rubik block leading-tight select-none"
+                style={{ color: colors.title }}
+              >
+                {companyName}
               </span>
             </motion.div>
             <motion.p 
@@ -81,9 +316,10 @@ export default function Footer() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="text-gray-600 mb-6 leading-relaxed text-[15px]"
+              className="mb-6 leading-relaxed text-[15px]"
+              style={{ color: colors.text }}
             >
-              A trusted Duluth auto body shop dedicated to excellence in collision repair and customer service.
+              {description}
             </motion.p>
 
             {/* Social Media Icons */}
@@ -94,38 +330,50 @@ export default function Footer() {
               transition={{ delay: 0.2 }}
               className="flex space-x-6"
             >
-              <a 
-                href="https://instagram.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-primary-600 transform transition-transform duration-200 hover:scale-110"
-              >
-                <InstagramIcon />
-              </a>
-              <a 
-                href="https://facebook.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-primary-600 transform transition-transform duration-200 hover:scale-110"
-              >
-                <FacebookIcon />
-              </a>
-              <a 
-                href="https://linkedin.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-primary-600 transform transition-transform duration-200 hover:scale-110"
-              >
-                <LinkedInIcon />
-              </a>
-              <a 
-                href="https://x.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-primary-600 transform transition-transform duration-200 hover:scale-110"
-              >
-                <TwitterXIcon />
-              </a>
+              {socialLinks.instagram && (
+                <a 
+                  href={socialLinks.instagram}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="transform transition-transform duration-200 hover:scale-110"
+                  style={{ color: colors.socialIcon }}
+                >
+                  <InstagramIcon />
+                </a>
+              )}
+              {socialLinks.facebook && (
+                <a 
+                  href={socialLinks.facebook}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="transform transition-transform duration-200 hover:scale-110"
+                  style={{ color: colors.socialIcon }}
+                >
+                  <FacebookIcon />
+                </a>
+              )}
+              {socialLinks.linkedin && (
+                <a 
+                  href={socialLinks.linkedin}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="transform transition-transform duration-200 hover:scale-110"
+                  style={{ color: colors.socialIcon }}
+                >
+                  <LinkedInIcon />
+                </a>
+              )}
+              {socialLinks.twitter && (
+                <a 
+                  href={socialLinks.twitter}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="transform transition-transform duration-200 hover:scale-110"
+                  style={{ color: colors.socialIcon }}
+                >
+                  <TwitterXIcon />
+                </a>
+              )}
             </motion.div>
           </div>
 
@@ -135,28 +383,31 @@ export default function Footer() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-lg font-semibold text-primary-600 mb-5 relative inline-block"
+              className="text-lg font-semibold mb-5 relative inline-block"
+              style={{ color: colors.quickLinksTitle }}
             >
               Quick Links
-              <span className="absolute -bottom-1 left-0 w-12 h-0.5 bg-primary-500/50 rounded-full"></span>
+              <span 
+                className="absolute -bottom-1 left-0 w-12 h-0.5 rounded-full"
+                style={{ backgroundColor: colors.divider }}
+              ></span>
             </motion.h3>
             <ul className="space-y-3">
-              {[
-                ['Schedule Now', '/#schedule'],
-                ['Services', '/services'],
-                ['About Us', '/about'],
-                ['Contact', '/contact']
-              ].map(([item, path], index) => (
+              {footerLinks.map(({ label, path }, index) => (
                 <motion.li 
-                  key={item}
+                  key={label}
                   initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
                   className="transform hover:-translate-y-0.5 transition-transform duration-200"
                 >
-                  <ShimmerLink href={path}>
-                    {item}
+                  <ShimmerLink 
+                    href={path}
+                    textColor={colors.link}
+                    hoverColor={colors.linkHover}
+                  >
+                    {label}
                   </ShimmerLink>
                 </motion.li>
               ))}
@@ -169,57 +420,93 @@ export default function Footer() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-lg font-semibold text-primary-600 mb-5 relative inline-block"
+              className="text-lg font-semibold mb-5 relative inline-block"
+              style={{ color: colors.contactInfoTitle }}
             >
               Contact Info
-              <span className="absolute -bottom-1 left-0 w-12 h-0.5 bg-primary-500/50 rounded-full"></span>
+              <span 
+                className="absolute -bottom-1 left-0 w-12 h-0.5 rounded-full"
+                style={{ backgroundColor: colors.divider }}
+              ></span>
             </motion.h3>
             <ul className="space-y-3">
-              <motion.li
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-              >
-                <div className="flex items-center space-x-3 group hover:bg-white/80 p-2 rounded-lg transition-all duration-300">
-                  <MapPinIcon className="w-5 h-5 text-primary-600 transform transition-transform duration-200 group-hover:scale-110" />
-                  <div>
-                    <p className="text-gray-600 group-hover:text-primary-500 transition-colors duration-200 text-[15px]">2785 Buford Hwy Ste 101-C</p>
-                    <p className="text-gray-600 group-hover:text-primary-500 transition-colors duration-200 text-[15px]">Duluth, GA 30096</p>
+              {contactInfo.address && (
+                <motion.li
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                >
+                  <div className="flex items-center space-x-3 group hover:bg-white/80 p-2 rounded-lg transition-all duration-300">
+                    <MapPinIcon 
+                      className="w-5 h-5 transform transition-transform duration-200 group-hover:scale-110" 
+                      style={{ color: colors.socialIcon }}
+                    />
+                    <div>
+                      <p 
+                        className="transition-colors duration-200 text-[15px]"
+                        style={{ 
+                          color: colors.text,
+                          "--hover-color": colors.linkHover
+                        } as React.CSSProperties}
+                      >{contactInfo.address}</p>
+                    </div>
                   </div>
-                </div>
-              </motion.li>
-              <motion.li
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-              >
-                <a 
-                  href="tel:(770) 495-0050"
-                  className="flex items-center space-x-3 group hover:bg-white/80 p-2 rounded-lg transition-all duration-300"
+                </motion.li>
+              )}
+              {contactInfo.phone && (
+                <motion.li
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.1 }}
                 >
-                  <PhoneIcon className="w-5 h-5 text-primary-600 transform transition-transform duration-200 group-hover:scale-110" />
-                  <span className="text-gray-600 group-hover:text-primary-500 transition-colors duration-200 text-[15px]">
-                    (770) 495-0050
-                  </span>
-                </a>
-              </motion.li>
-              <motion.li
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
-              >
-                <a 
-                  href="mailto:support@taylorscollision.com"
-                  className="flex items-center space-x-3 group hover:bg-white/80 p-2 rounded-lg transition-all duration-300"
+                  <a 
+                    href={`tel:${contactInfo.phone}`}
+                    className="flex items-center space-x-3 group hover:bg-white/80 p-2 rounded-lg transition-all duration-300"
+                  >
+                    <PhoneIcon 
+                      className="w-5 h-5 transform transition-transform duration-200 group-hover:scale-110" 
+                      style={{ color: colors.socialIcon }}
+                    />
+                    <span 
+                      className="transition-colors duration-200 text-[15px] group-hover:text-[--hover-color]"
+                      style={{ 
+                        color: colors.text,
+                        "--hover-color": colors.linkHover
+                      } as React.CSSProperties}
+                    >
+                      {contactInfo.phone}
+                    </span>
+                  </a>
+                </motion.li>
+              )}
+              {contactInfo.email && (
+                <motion.li
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.2 }}
                 >
-                  <EnvelopeIcon className="w-5 h-5 text-primary-600 transform transition-transform duration-200 group-hover:scale-110" />
-                  <span className="text-gray-600 group-hover:text-primary-500 transition-colors duration-200 text-[15px]">
-                    support@taylorscollision.com
-                  </span>
-                </a>
-              </motion.li>
+                  <a 
+                    href={`mailto:${contactInfo.email}`}
+                    className="flex items-center space-x-3 group hover:bg-white/80 p-2 rounded-lg transition-all duration-300"
+                  >
+                    <EnvelopeIcon 
+                      className="w-5 h-5 transform transition-transform duration-200 group-hover:scale-110" 
+                      style={{ color: colors.socialIcon }}
+                    />
+                    <span 
+                      className="transition-colors duration-200 text-[15px] group-hover:text-[--hover-color]"
+                      style={{ 
+                        color: colors.text,
+                        "--hover-color": colors.linkHover
+                      } as React.CSSProperties}
+                    >
+                      {contactInfo.email}
+                    </span>
+                  </a>
+                </motion.li>
+              )}
             </ul>
           </div>
 
@@ -229,63 +516,108 @@ export default function Footer() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-lg font-semibold text-primary-600 mb-5 relative inline-block"
+              className="text-lg font-semibold mb-5 relative inline-block"
+              style={{ color: colors.infoTitle }}
             >
               Info
-              <span className="absolute -bottom-1 left-0 w-12 h-0.5 bg-primary-500/50 rounded-full"></span>
+              <span 
+                className="absolute -bottom-1 left-0 w-12 h-0.5 rounded-full"
+                style={{ backgroundColor: colors.divider }}
+              ></span>
             </motion.h3>
             <div className="space-y-3">
               {/* Hours Card */}
-              <motion.div 
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                className="bg-white/60 p-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 group"
-              >
-                <div className="flex items-start space-x-3">
-                  <ClockIcon className="w-5 h-5 text-primary-600 transform transition-transform duration-200 group-hover:scale-110 shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600 text-[15px]">Monday - Friday</span>
-                      <span className="text-primary-600 font-medium text-[15px]">8:30 AM - 6:00 PM</span>
-                    </div>
-                    <div className="flex justify-between items-center pt-1 border-t border-gray-100">
-                      <span className="text-gray-600 text-[15px]">Saturday - Sunday</span>
-                      <span className="text-primary-600 font-medium text-[15px]">Closed</span>
+              {(hours.weekday || hours.weekend) && (
+                <motion.div 
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  className="p-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 group"
+                  style={{ backgroundColor: colors.hoursCardBg }}
+                >
+                  <div className="flex items-start space-x-3">
+                    <ClockIcon 
+                      className="w-5 h-5 transform transition-transform duration-200 group-hover:scale-110 shrink-0" 
+                      style={{ color: colors.socialIcon }}
+                    />
+                    <div className="flex-1 space-y-2">
+                      {hours.weekday && (
+                        <div className="flex justify-between items-center">
+                          <span 
+                            className="text-[15px]"
+                            style={{ color: colors.hoursCardText }}
+                          >Monday - Friday</span>
+                          <span 
+                            className="font-medium text-[15px]"
+                            style={{ color: colors.hoursCardValue }}
+                          >{hours.weekday}</span>
+                        </div>
+                      )}
+                      {hours.weekend && (
+                        <div className="flex justify-between items-center pt-1 border-t border-gray-100">
+                          <span 
+                            className="text-[15px]"
+                            style={{ color: colors.hoursCardText }}
+                          >Saturday - Sunday</span>
+                          <span 
+                            className="font-medium text-[15px]"
+                            style={{ color: colors.hoursCardValue }}
+                          >{hours.weekend}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
+              )}
 
               {/* Join Our Team Button */}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-              >
-                <Link 
-                  href="/careers"
-                  className="flex items-center justify-center space-x-2 bg-primary-500 hover:bg-primary-600 text-white p-4 rounded-lg transition-all duration-300 group shadow-sm hover:shadow-md"
+              {showJoinTeamButton && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.1 }}
                 >
-                  <UserGroupIcon className="w-5 h-5" />
-                  <span className="font-medium text-[15px]">Join Our Team</span>
-                </Link>
-              </motion.div>
+                  <Link 
+                    href={joinTeamLink}
+                    className="flex items-center justify-center space-x-2 p-4 rounded-lg transition-all duration-300 group shadow-sm hover:shadow-md"
+                    style={{ 
+                      backgroundColor: colors.joinButtonBg, 
+                      color: colors.joinButtonText,
+                      "--hover-bg": colors.joinButtonHoverBg
+                    } as React.CSSProperties}
+                    onMouseOver={(e) => {
+                      const target = e.currentTarget;
+                      target.style.backgroundColor = colors.joinButtonHoverBg;
+                    }}
+                    onMouseOut={(e) => {
+                      const target = e.currentTarget;
+                      target.style.backgroundColor = colors.joinButtonBg;
+                    }}
+                  >
+                    <UserGroupIcon className="w-5 h-5" />
+                    <span className="font-medium text-[15px]">{joinTeamText}</span>
+                  </Link>
+                </motion.div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-16 pt-8 border-t border-primary-500/20 max-w-6xl mx-auto">
+        <div 
+          className="mt-16 pt-8 max-w-6xl mx-auto"
+          style={{ borderTop: `1px solid ${colors.divider}` }}
+        >
           <div className="flex flex-col md:flex-row justify-between items-center">
             <motion.p 
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
-              className="text-gray-500 text-sm"
+              className="text-sm"
+              style={{ color: colors.copyrightText }}
             >
-              © {new Date().getFullYear()} Taylor&apos;s Collision. All rights reserved.
+              {copyright}
             </motion.p>
             <div className="flex space-x-8 mt-4 md:mt-0">
               <motion.div
@@ -297,7 +629,19 @@ export default function Footer() {
               >
                 <button
                   onClick={openPrivacyPolicy}
-                  className="text-gray-500 hover:text-primary-500 transition-colors duration-200"
+                  className="transition-colors duration-200"
+                  style={{ 
+                    color: colors.policyLink,
+                    "--hover-color": colors.policyLinkHover
+                  } as React.CSSProperties}
+                  onMouseOver={(e) => {
+                    const target = e.currentTarget;
+                    target.style.color = colors.policyLinkHover;
+                  }}
+                  onMouseOut={(e) => {
+                    const target = e.currentTarget;
+                    target.style.color = colors.policyLink;
+                  }}
                 >
                   Privacy Policy
                 </button>
@@ -311,7 +655,19 @@ export default function Footer() {
               >
                 <button
                   onClick={openTermsOfService}
-                  className="text-gray-500 hover:text-primary-500 transition-colors duration-200"
+                  className="transition-colors duration-200"
+                  style={{ 
+                    color: colors.policyLink,
+                    "--hover-color": colors.policyLinkHover
+                  } as React.CSSProperties}
+                  onMouseOver={(e) => {
+                    const target = e.currentTarget;
+                    target.style.color = colors.policyLinkHover;
+                  }}
+                  onMouseOut={(e) => {
+                    const target = e.currentTarget;
+                    target.style.color = colors.policyLink;
+                  }}
                 >
                   Terms of Service
                 </button>

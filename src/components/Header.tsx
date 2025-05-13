@@ -13,6 +13,10 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
   const config = useConfig()
+  
+  // Add local state for InfoBar settings to ensure persistence
+  const [infoBarBgColor, setInfoBarBgColor] = useState<string>('#1787c9')
+  const [infoBarTextColor, setInfoBarTextColor] = useState<string>('#ffffff')
 
   const navBar = config.navBar || {};
   const navLinks = navBar.navLinks || [];
@@ -20,6 +24,51 @@ const Header = () => {
   const navText = navBar.textColor || '#0369a1';
 
   const infoBar = config.infoBar || {};
+  
+  // Load InfoBar colors from localStorage if available
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Try to load from the most recent source of truth
+      try {
+        // First check sessionStorage for preview config
+        const previewConfig = sessionStorage.getItem('previewConfig');
+        if (previewConfig) {
+          const parsedConfig = JSON.parse(previewConfig);
+          if (parsedConfig.infoBar?.backgroundColor) {
+            setInfoBarBgColor(parsedConfig.infoBar.backgroundColor);
+          }
+          if (parsedConfig.infoBar?.textColor) {
+            setInfoBarTextColor(parsedConfig.infoBar.textColor);
+          }
+          return;
+        }
+        
+        // Then check localStorage for saved config
+        const savedConfig = localStorage.getItem('siteConfig');
+        if (savedConfig) {
+          const parsedConfig = JSON.parse(savedConfig);
+          if (parsedConfig.infoBar?.backgroundColor) {
+            setInfoBarBgColor(parsedConfig.infoBar.backgroundColor);
+          }
+          if (parsedConfig.infoBar?.textColor) {
+            setInfoBarTextColor(parsedConfig.infoBar.textColor);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading InfoBar colors from storage:', error);
+      }
+    }
+  }, []);
+  
+  // Update local state when config changes
+  useEffect(() => {
+    if (infoBar.backgroundColor) {
+      setInfoBarBgColor(infoBar.backgroundColor);
+    }
+    if (infoBar.textColor) {
+      setInfoBarTextColor(infoBar.textColor);
+    }
+  }, [infoBar.backgroundColor, infoBar.textColor]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,32 +89,103 @@ const Header = () => {
     if (path === '/' || path.toLowerCase() === 'home') return pathname === '/';
     return pathname === path;
   }
+  
+  // Listen for direct DOM updates from preview iframe
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data && event.data.type === 'configUpdate' && event.data.config?.infoBar) {
+          if (event.data.config.infoBar.backgroundColor) {
+            setInfoBarBgColor(event.data.config.infoBar.backgroundColor);
+          }
+          if (event.data.config.infoBar.textColor) {
+            setInfoBarTextColor(event.data.config.infoBar.textColor);
+          }
+        }
+      };
+      
+      window.addEventListener('message', handleMessage);
+      
+      // Listen for custom event from InfoBarConfig
+      const handleInfoBarColorChange = (event: CustomEvent) => {
+        const { colorType, value } = event.detail;
+        if (colorType === 'backgroundColor') {
+          setInfoBarBgColor(value);
+        } else if (colorType === 'textColor') {
+          setInfoBarTextColor(value);
+        }
+      };
+      
+      // Also listen for custom event
+      const handleConfigChange = () => {
+        if (window && (window as any).__PREVIEW_CONFIG__?.infoBar) {
+          const previewConfig = (window as any).__PREVIEW_CONFIG__;
+          if (previewConfig.infoBar.backgroundColor) {
+            setInfoBarBgColor(previewConfig.infoBar.backgroundColor);
+          }
+          if (previewConfig.infoBar.textColor) {
+            setInfoBarTextColor(previewConfig.infoBar.textColor);
+          }
+        }
+      };
+      
+      // Listen for config saved event
+      const handleConfigSaved = (event: CustomEvent) => {
+        const { config } = event.detail;
+        if (config?.infoBar) {
+          if (config.infoBar.backgroundColor) {
+            setInfoBarBgColor(config.infoBar.backgroundColor);
+          }
+          if (config.infoBar.textColor) {
+            setInfoBarTextColor(config.infoBar.textColor);
+          }
+        }
+      };
+      
+      document.addEventListener('preview-config-loaded', handleConfigChange);
+      document.addEventListener('infobar-color-changed', handleInfoBarColorChange as EventListener);
+      document.addEventListener('config-saved', handleConfigSaved as EventListener);
+      
+      return () => {
+        window.removeEventListener('message', handleMessage);
+        document.removeEventListener('preview-config-loaded', handleConfigChange);
+        document.removeEventListener('infobar-color-changed', handleInfoBarColorChange as EventListener);
+        document.removeEventListener('config-saved', handleConfigSaved as EventListener);
+      };
+    }
+  }, []);
 
   return (
     <header className="w-full fixed top-0 left-0 right-0 z-50">
       {/* Top info bar: phone, location, hours only */}
       <div 
-        className="w-full text-white transition-all duration-300 ease-out backdrop-blur-sm"
-        style={{ background: infoBar.backgroundColor || '#1787c9', height: isScrolled ? '0' : '44px', opacity: isScrolled ? '0' : '1', overflow: 'hidden' }}
+        className="w-full transition-all duration-300 ease-out backdrop-blur-sm hidden md:block relative overflow-hidden"
+        style={{ background: infoBarBgColor, height: isScrolled ? '0' : '44px', opacity: isScrolled ? '0' : '1', overflow: 'hidden' }}
       >
         <div className="container mx-auto px-4 h-11">
           <div className="h-full flex items-center justify-between">
             <div className="flex items-center gap-8 text-sm">
               {infoBar.phone && (
-                <span className="flex items-center gap-2">
-                  <PhoneIcon className="h-4 w-4" />
-                  <span className="font-medium tracking-wide">{infoBar.phone}</span>
+                <span className="flex items-center gap-2 relative" style={{ color: infoBarTextColor }}>
+                  {/* Semi-transparent background only around the icon */}
+                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20">
+                    <PhoneIcon className="h-4 w-4 relative z-10" />
+                  </span>
+                  <span className="font-medium tracking-wide relative z-10">{infoBar.phone}</span>
                 </span>
               )}
               {infoBar.address && (
-                <span className="flex items-center gap-2">
-                  <MapPinIcon className="h-4 w-4 flex-shrink-0" />
-                  <span className="font-medium tracking-wide">{infoBar.address}</span>
+                <span className="flex items-center gap-2 relative" style={{ color: infoBarTextColor }}>
+                  {/* Semi-transparent background only around the icon */}
+                  <span className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20">
+                    <MapPinIcon className="h-4 w-4 flex-shrink-0 relative z-10" />
+                  </span>
+                  <span className="font-medium tracking-wide relative z-10">{infoBar.address}</span>
                 </span>
               )}
             </div>
             {infoBar.hours && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" style={{ color: infoBarTextColor }}>
                 <span className="bg-white/20 px-4 py-1.5 rounded-full font-medium tracking-wide">
                   {infoBar.hours}
                 </span>
@@ -91,7 +211,7 @@ const Header = () => {
                 <span
                   className="font-bold text-2xl md:text-3xl font-rubik leading-tight select-none"
                   style={{
-                    background: `linear-gradient(90deg, ${config.navBar.siteTitleGradientFrom || '#3b82f6'}, ${config.navBar.siteTitleGradientTo || '#06b6d4'})`,
+                    background: `linear-gradient(90deg, ${config.navBar?.siteTitleGradientFrom || '#3b82f6'}, ${config.navBar?.siteTitleGradientTo || '#06b6d4'})`,
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
@@ -99,7 +219,7 @@ const Header = () => {
                     display: 'inline',
                   }}
                 >
-                  {config.navBar.siteTitle || 'Site Title'}
+                  {config.navBar?.siteTitle || 'Site Title'}
                 </span>
               )}
             </Link>
@@ -201,7 +321,7 @@ const Header = () => {
                       <span
                         className="font-bold text-2xl md:text-3xl font-rubik leading-tight select-none"
                         style={{
-                          background: `linear-gradient(90deg, ${config.navBar.siteTitleGradientFrom || '#3b82f6'}, ${config.navBar.siteTitleGradientTo || '#06b6d4'})`,
+                          background: `linear-gradient(90deg, ${config.navBar?.siteTitleGradientFrom || '#3b82f6'}, ${config.navBar?.siteTitleGradientTo || '#06b6d4'})`,
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
                           backgroundClip: 'text',
@@ -209,7 +329,7 @@ const Header = () => {
                           display: 'inline',
                         }}
                       >
-                        {config.navBar.siteTitle || 'Site Title'}
+                        {config.navBar?.siteTitle || 'Site Title'}
                       </span>
                     )}
                   </Link>

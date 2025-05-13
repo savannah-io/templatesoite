@@ -5,6 +5,7 @@ import { useState, Suspense, useEffect } from 'react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import MouseFollowGradient from '@/components/MouseFollowGradient'
+import localConfig from '@/config/localConfig'
 import { 
   WrenchScrewdriverIcon, 
   SparklesIcon, 
@@ -36,6 +37,73 @@ declare global {
   }
 }
 
+// Define interfaces for service category and services
+interface ServiceItem {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  iconColor?: string;
+  bgColor?: string;
+  titleColor?: string;
+  descriptionColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  borderRadius?: string;
+  shadow?: string;
+  backgroundOpacity?: number;
+  iconSize?: string;
+  titleFontSize?: string;
+  descriptionFontSize?: string;
+}
+
+interface ServiceCategory {
+  id: string;
+  title: string;
+  icon: React.ReactNode;
+  description: string;
+  bgImage: string;
+  color: string;
+  bgColor?: string;
+  iconColor?: string;
+  titleColor?: string;
+  descriptionColor?: string;
+  borderColor?: string;
+  textColor?: string;
+  cardTextColor?: string;
+  cardDescriptionColor?: string;
+  cardBorderRadius?: string;
+  cardShadow?: string;
+  cardBackgroundOpacity?: number;
+  iconSize?: string;
+  titleFontSize?: string;
+  descriptionFontSize?: string;
+  services: ServiceItem[];
+}
+
+// Interface for expertise cards
+interface ExpertiseCard {
+  title: string;
+  description: string;
+}
+
+// Define the ServicesConfig interface
+interface ServicesConfig {
+  title?: string;
+  subtitle?: string;
+  badge?: string;
+  yearsExperience?: string;
+  carsRepaired?: string;
+  serviceCategories?: ServiceCategory[];
+  expertiseTitle?: string;
+  expertiseDescription?: string;
+  expertiseCards?: ExpertiseCard[];
+  ctaTitle?: string;
+  ctaDescription?: string;
+  scheduleButtonText?: string;
+  callButtonText?: string;
+  heroImage?: string;
+}
+
 // Add type for the icon prop
 interface SectionProps {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
@@ -65,6 +133,10 @@ const Section: React.FC<SectionProps> = ({ icon: Icon, title, children }) => (
 
 function ServicesContent() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  // Get config data from localConfig
+  const servicesConfig: ServicesConfig = (localConfig.pages as any)?.Services || {
+    serviceCategories: []
+  };
 
   const handleCategorySelect = (categoryId: string) => {
     console.log('Selecting category:', categoryId);
@@ -87,7 +159,7 @@ function ServicesContent() {
     };
   }, [selectedCategory]);
 
-  const serviceCategories = [
+  const serviceCategories: ServiceCategory[] = servicesConfig.serviceCategories || [
     {
       id: "collision",
       title: "Collision Services",
@@ -95,26 +167,50 @@ function ServicesContent() {
       description: "Complete collision repair services to restore your vehicle to pre-accident condition",
       bgImage: "/images/back1.png",
       color: "from-primary-500 to-primary-600",
+      iconColor: "#ffffff",
+      titleColor: "#ffffff",
+      descriptionColor: "#f3f4f6",
+      borderColor: "#e5e7eb",
       services: [
         {
           title: "Collision Repair",
           description: "Expert repair of vehicle damage from accidents",
-          icon: <WrenchScrewdriverIcon className="w-6 h-6" />
+          icon: <WrenchScrewdriverIcon className="w-6 h-6" />,
+          iconColor: "#3b82f6",
+          titleColor: "#111827",
+          descriptionColor: "#6b7280",
+          bgColor: "#f9fafb", 
+          borderColor: "#e5e7eb"
         },
         {
           title: "Frame & Alignment",
           description: "Precise frame straightening and alignment services",
-          icon: <CogIcon className="w-6 h-6" />
+          icon: <CogIcon className="w-6 h-6" />,
+          iconColor: "#3b82f6",
+          titleColor: "#111827",
+          descriptionColor: "#6b7280",
+          bgColor: "#f9fafb", 
+          borderColor: "#e5e7eb"
         },
         {
           title: "Paint Services",
           description: "Professional auto painting with color matching",
-          icon: <PaintBrushIcon className="w-6 h-6" />
+          icon: <PaintBrushIcon className="w-6 h-6" />,
+          iconColor: "#3b82f6",
+          titleColor: "#111827",
+          descriptionColor: "#6b7280",
+          bgColor: "#f9fafb", 
+          borderColor: "#e5e7eb"
         },
         {
           title: "Dent Removal",
           description: "Skilled dent removal using advanced techniques",
-          icon: <WrenchIcon className="w-6 h-6" />
+          icon: <WrenchIcon className="w-6 h-6" />,
+          iconColor: "#3b82f6",
+          titleColor: "#111827",
+          descriptionColor: "#6b7280",
+          bgColor: "#f9fafb", 
+          borderColor: "#e5e7eb"
         }
       ]
     },
@@ -125,26 +221,50 @@ function ServicesContent() {
       description: "Premium cosmetic services to enhance and protect your vehicle&apos;s appearance",
       bgImage: "/images/back5.png",
       color: "from-primary-500 to-primary-600",
+      iconColor: "#ffffff",
+      titleColor: "#ffffff",
+      descriptionColor: "#f3f4f6",
+      borderColor: "#e5e7eb",
       services: [
         {
           title: "Auto Detailing",
           description: "Comprehensive interior and exterior detailing",
-          icon: <SparklesIcon className="w-6 h-6" />
+          icon: <SparklesIcon className="w-6 h-6" />,
+          iconColor: "#3b82f6",
+          titleColor: "#111827",
+          descriptionColor: "#6b7280",
+          bgColor: "#f9fafb", 
+          borderColor: "#e5e7eb"
         },
         {
           title: "Paint Protection",
           description: "Advanced paint protection and ceramic coating",
-          icon: <ShieldCheckIcon className="w-6 h-6" />
+          icon: <ShieldCheckIcon className="w-6 h-6" />,
+          iconColor: "#3b82f6",
+          titleColor: "#111827",
+          descriptionColor: "#6b7280",
+          bgColor: "#f9fafb", 
+          borderColor: "#e5e7eb"
         },
         {
           title: "Classic Restoration",
           description: "Expert restoration of vintage vehicles",
-          icon: <WrenchScrewdriverOutlineIcon className="w-6 h-6" />
+          icon: <WrenchScrewdriverOutlineIcon className="w-6 h-6" />,
+          iconColor: "#3b82f6",
+          titleColor: "#111827",
+          descriptionColor: "#6b7280",
+          bgColor: "#f9fafb", 
+          borderColor: "#e5e7eb"
         },
         {
           title: "Wheel & Rim Services",
           description: "Professional wheel repair and restoration",
-          icon: <CogOutlineIcon className="w-6 h-6" />
+          icon: <CogOutlineIcon className="w-6 h-6" />,
+          iconColor: "#3b82f6",
+          titleColor: "#111827",
+          descriptionColor: "#6b7280",
+          bgColor: "#f9fafb", 
+          borderColor: "#e5e7eb"
         }
       ]
     },
@@ -155,26 +275,50 @@ function ServicesContent() {
       description: "Essential mechanical services and diagnostics for optimal vehicle performance",
       bgImage: "/images/back4.png",
       color: "from-primary-500 to-primary-600",
+      iconColor: "#ffffff",
+      titleColor: "#ffffff",
+      descriptionColor: "#f3f4f6",
+      borderColor: "#e5e7eb",
       services: [
         {
           title: "Diagnostic Services",
           description: "Comprehensive vehicle diagnostics and assessment",
-          icon: <BeakerIcon className="w-6 h-6" />
+          icon: <BeakerIcon className="w-6 h-6" />,
+          iconColor: "#3b82f6",
+          titleColor: "#111827",
+          descriptionColor: "#6b7280",
+          bgColor: "#f9fafb", 
+          borderColor: "#e5e7eb"
         },
         {
           title: "Check Engine Light",
           description: "Professional diagnosis and resolution",
-          icon: <ExclamationTriangleIcon className="w-6 h-6" />
+          icon: <ExclamationTriangleIcon className="w-6 h-6" />,
+          iconColor: "#3b82f6",
+          titleColor: "#111827",
+          descriptionColor: "#6b7280",
+          bgColor: "#f9fafb", 
+          borderColor: "#e5e7eb"
         },
         {
           title: "Fleet Services",
           description: "Specialized fleet maintenance and repair",
-          icon: <TruckIcon className="w-6 h-6" />
+          icon: <TruckIcon className="w-6 h-6" />,
+          iconColor: "#3b82f6",
+          titleColor: "#111827",
+          descriptionColor: "#6b7280",
+          bgColor: "#f9fafb", 
+          borderColor: "#e5e7eb"
         },
         {
           title: "Custom Fabrication",
           description: "Specialized metal fabrication and repairs",
-          icon: <WrenchIcon className="w-6 h-6" />
+          icon: <WrenchIcon className="w-6 h-6" />,
+          iconColor: "#3b82f6",
+          titleColor: "#111827",
+          descriptionColor: "#6b7280",
+          bgColor: "#f9fafb", 
+          borderColor: "#e5e7eb"
         }
       ]
     }
@@ -215,7 +359,7 @@ function ServicesContent() {
                   height={24}
                   className="w-6 h-6"
                 />
-                <span className="text-sm font-medium text-white">Certified Auto Body Shop</span>
+                <span className="text-sm font-medium text-white">{servicesConfig.badge || "Certified Auto Body Shop"}</span>
                 <svg className="w-5 h-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
@@ -227,7 +371,7 @@ function ServicesContent() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <span className="text-white">Our Auto Body </span>
+              <span className="text-white">{servicesConfig.title || "Our Auto Body "}</span>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-100">Services</span>
             </motion.h1>
             <motion.p 
@@ -236,7 +380,7 @@ function ServicesContent() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              Expert collision repair and auto body services in Duluth, GA. Quality work guaranteed.
+              {servicesConfig.subtitle || "Expert collision repair and auto body services in Duluth, GA. Quality work guaranteed."}
             </motion.p>
 
             <div className="flex justify-center gap-8">
@@ -248,7 +392,7 @@ function ServicesContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                   </div>
-                  <div className="text-3xl font-bold text-white mb-1 font-display">15+</div>
+                  <div className="text-3xl font-bold text-white mb-1 font-display">{servicesConfig.yearsExperience || "15+"}</div>
                   <div className="text-sm text-blue-100 font-medium">Years Experience</div>
                 </div>
               </div>
@@ -261,7 +405,7 @@ function ServicesContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                     </svg>
                   </div>
-                  <div className="text-3xl font-bold text-white mb-1 font-display">5000+</div>
+                  <div className="text-3xl font-bold text-white mb-1 font-display">{servicesConfig.carsRepaired || "5000+"}</div>
                   <div className="text-sm text-blue-100 font-medium">Cars Repaired</div>
                 </div>
               </div>
@@ -293,18 +437,19 @@ function ServicesContent() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                   <div className="relative h-full p-6 flex flex-col justify-end">
-                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${category.color} text-white flex items-center justify-center p-4 mb-4 transform transition-transform duration-300 group-hover:scale-110`}>
+                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${category.color} text-white flex items-center justify-center p-4 mb-4 transform transition-transform duration-300 group-hover:scale-110`} style={{ color: category.iconColor || '#ffffff' }}>
                       {category.icon}
                     </div>
-                    <h2 className="text-2xl font-display font-bold text-white mb-2">
+                    <h2 className="text-2xl font-display font-bold mb-2" style={{ color: category.titleColor || '#ffffff' }}>
                       {category.title}
                     </h2>
-                    <p className="text-gray-300 mb-4">
+                    <p className="mb-4" style={{ color: category.descriptionColor || '#f3f4f6' }}>
                       {category.description}
                     </p>
                     <button 
                       onClick={() => handleCategorySelect(category.id)}
-                      className="w-full px-4 py-3 bg-white/10 hover:bg-primary-500 border border-white/20 rounded-lg text-white font-medium transition-all duration-200"
+                      className="w-full px-4 py-3 bg-white/10 hover:bg-primary-500 border border-white/20 rounded-lg font-medium transition-all duration-200"
+                      style={{ color: category.titleColor || '#ffffff', borderColor: category.borderColor || '#e5e7eb' }}
                     >
                       Learn More
                       <ArrowRightIcon className="w-4 h-4 ml-2 inline-block" />
@@ -381,16 +526,20 @@ function ServicesContent() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.1 }}
                         className="bg-gray-50 rounded-xl p-4 md:p-6 hover:bg-gray-100 transition-colors duration-200"
+                        style={{ backgroundColor: service.bgColor || '#f9fafb', borderColor: service.borderColor || '#e5e7eb', borderWidth: '1px' }}
                       >
                         <div className="flex items-start gap-3 md:gap-4">
-                          <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-br ${selectedCategoryData.color} text-white flex items-center justify-center p-2 md:p-3 shrink-0`}>
+                          <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-br ${selectedCategoryData.color} flex items-center justify-center p-2 md:p-3 shrink-0`} 
+                               style={{ color: service.iconColor || '#ffffff' }}>
                             {service.icon}
                           </div>
                           <div>
-                            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-1 md:mb-2">
+                            <h3 className="text-lg md:text-xl font-bold mb-1 md:mb-2"
+                                style={{ color: service.titleColor || '#111827' }}>
                               {service.title}
                             </h3>
-                            <p className="text-gray-600 text-sm md:text-base">
+                            <p className="text-sm md:text-base"
+                               style={{ color: service.descriptionColor || '#6b7280' }}>
                               {service.description}
                             </p>
                           </div>
@@ -464,83 +613,40 @@ function ServicesContent() {
               transition={{ duration: 0.5 }}
             >
               <h2 className="text-4xl md:text-5xl font-display font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-900">
-                Why Expert Auto Body Repair Matters
+                {servicesConfig.expertiseTitle || "Why Expert Auto Body Repair Matters"}
               </h2>
               <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                Modern vehicles are complex machines requiring specialized knowledge and equipment for proper repairs. Choosing the right auto body shop can make all the difference in your vehicle's safety and longevity.
+                {servicesConfig.expertiseDescription || "Modern vehicles are complex machines requiring specialized knowledge and equipment for proper repairs. Choosing the right auto body shop can make all the difference in your vehicle's safety and longevity."}
               </p>
             </motion.div>
           </div>
           
           <div className="max-w-6xl mx-auto relative space-y-6">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="group"
-            >
-              <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden flex items-center">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-50/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center shrink-0 mr-8 group-hover:scale-110 transition-transform duration-300 relative">
-                  <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
+            {(servicesConfig.expertiseCards || []).map((card: ExpertiseCard, index: number) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="group"
+              >
+                <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden flex items-center">
+                  <div className={`absolute inset-0 bg-gradient-to-${index % 2 === 0 ? 'r' : 'l'} from-primary-50/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                  <div className="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center shrink-0 mr-8 group-hover:scale-110 transition-transform duration-300 relative">
+                    <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div className="relative flex-1">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">{card.title}</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                      {card.description}
+                    </p>
+                  </div>
                 </div>
-                <div className="relative flex-1">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">Safety First</h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    Proper repairs ensure your vehicle's structural integrity and safety systems function correctly, protecting you and your passengers.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="group"
-            >
-              <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden flex items-center">
-                <div className="absolute inset-0 bg-gradient-to-l from-primary-50/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center shrink-0 mr-8 group-hover:scale-110 transition-transform duration-300 relative">
-                  <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <div className="relative flex-1">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">Advanced Technology</h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    We use state-of-the-art equipment and techniques to diagnose and repair modern vehicles with precision and accuracy.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="group"
-            >
-              <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden flex items-center">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-50/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center shrink-0 mr-8 group-hover:scale-110 transition-transform duration-300 relative">
-                  <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="relative flex-1">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">Long-Term Value</h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    Expert repairs maintain your vehicle's value and prevent future problems, saving you money in the long run.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -560,10 +666,10 @@ function ServicesContent() {
             <div className="bg-white/5 backdrop-blur-[2px] rounded-xl py-8 px-12">
               <div className="text-center">
                 <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-3">
-                  Ready to Get Your Car Back to Perfect?
+                  {servicesConfig.ctaTitle || "Ready to Get Your Car Back to Perfect?"}
                 </h2>
                 <p className="text-xl text-blue-50 mb-6">
-                  Schedule your appointment today and experience the difference expert auto body repair makes.
+                  {servicesConfig.ctaDescription || "Schedule your appointment today and experience the difference expert auto body repair makes."}
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
                   <a
@@ -574,14 +680,14 @@ function ServicesContent() {
                     }}
                     className="inline-flex items-center justify-center px-8 py-3 bg-white hover:bg-gray-100 text-primary-600 font-semibold rounded-lg transition-colors duration-200"
                   >
-                    Schedule Now
+                    {servicesConfig.scheduleButtonText || "Schedule Now"}
                     <ArrowRightIcon className="w-5 h-5 ml-2" />
                   </a>
                   <a
                     href="tel:+17704950050"
                     className="inline-flex items-center justify-center px-8 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors duration-200"
                   >
-                    Call Us Now
+                    {servicesConfig.callButtonText || "Call Us Now"}
                     <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>

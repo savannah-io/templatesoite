@@ -1,100 +1,198 @@
 /* Base Tailwind imports */
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* Custom Cursors */
 @layer base {
-  /* White backgrounds - use blue cursors */
-  html {
+  /* 
+   * Cursor Rules:
+   * 1. Default cursor is disabled (standard system cursor is used) 
+   * 2. Custom cursors are ONLY enabled in preview content or main site content
+   * 3. Configuration page explicitly disables all custom cursors
+   */
+   
+  /* Only apply custom cursors on main site or in preview iframe, NOT in config pages */
+  html[data-preview="true"] body, 
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) {
     cursor: url('/cursor/cursor_blu/favicon-32x32.png'), auto;
   }
   
   /* Links and interactive elements on white backgrounds */
-  a, button, [role="button"], 
-  input[type="submit"], 
-  input[type="button"], 
-  input[type="reset"],
-  select,
-  .cursor-pointer {
+  html[data-preview="true"] a,
+  html[data-preview="true"] button,
+  html[data-preview="true"] [role="button"], 
+  html[data-preview="true"] input[type="submit"],
+  html[data-preview="true"] input[type="button"],
+  html[data-preview="true"] input[type="reset"],
+  html[data-preview="true"] select,
+  html[data-preview="true"] .cursor-pointer,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) a, 
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) button, 
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [role="button"], 
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) input[type="submit"], 
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) input[type="button"], 
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) input[type="reset"],
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) select,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .cursor-pointer {
     cursor: url('/cursor/cursor_blu/favicon-32x32.png'), pointer !important;
   }
   
   /* Blue backgrounds - use black cursors */
-  .bg-primary-600 *,
-  .bg-primary-700 *,
-  .bg-primary-800 *,
-  .bg-primary-900 *,
-  .bg-sky-600 *,
-  .bg-sky-700 *,
-  .bg-sky-800 *,
-  .bg-sky-900 *,
-  [class*="from-primary-"] *,
-  [class*="via-primary-"] *,
-  [class*="to-primary-"] *,
-  .bg-gradient-to-br *,
-  .bg-gradient-to-r * {
+  html[data-preview="true"] .bg-primary-600 *,
+  html[data-preview="true"] .bg-primary-700 *,
+  html[data-preview="true"] .bg-primary-800 *,
+  html[data-preview="true"] .bg-primary-900 *,
+  html[data-preview="true"] .bg-sky-600 *,
+  html[data-preview="true"] .bg-sky-700 *,
+  html[data-preview="true"] .bg-sky-800 *,
+  html[data-preview="true"] .bg-sky-900 *,
+  html[data-preview="true"] [class*="from-primary-"] *,
+  html[data-preview="true"] [class*="via-primary-"] *,
+  html[data-preview="true"] [class*="to-primary-"] *,
+  html[data-preview="true"] .bg-gradient-to-br *,
+  html[data-preview="true"] .bg-gradient-to-r *,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-600 *,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-700 *,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-800 *,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-900 *,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-sky-600 *,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-sky-700 *,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-sky-800 *,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-sky-900 *,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [class*="from-primary-"] *,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [class*="via-primary-"] *,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [class*="to-primary-"] *,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-gradient-to-br *,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-gradient-to-r * {
     cursor: url('/cursor/cursor_blk/favicon-32x32.png'), auto !important;
   }
 
   /* Links and interactive elements on blue backgrounds */
-  .bg-primary-600 a,
-  .bg-primary-700 a,
-  .bg-primary-800 a,
-  .bg-primary-900 a,
-  .bg-sky-600 a,
-  .bg-sky-700 a,
-  .bg-sky-800 a,
-  .bg-sky-900 a,
-  [class*="from-primary-"] a,
-  [class*="via-primary-"] a,
-  [class*="to-primary-"] a,
-  .bg-gradient-to-br a,
-  .bg-gradient-to-r a,
-  .bg-primary-600 button,
-  .bg-primary-700 button,
-  .bg-primary-800 button,
-  .bg-primary-900 button,
-  .bg-sky-600 button,
-  .bg-sky-700 button,
-  .bg-sky-800 button,
-  .bg-sky-900 button,
-  [class*="from-primary-"] button,
-  [class*="via-primary-"] button,
-  [class*="to-primary-"] button,
-  .bg-gradient-to-br button,
-  .bg-gradient-to-r button,
-  .bg-primary-600 [role="button"],
-  .bg-primary-700 [role="button"],
-  .bg-primary-800 [role="button"],
-  .bg-primary-900 [role="button"],
-  [class*="from-primary-"] [role="button"],
-  [class*="via-primary-"] [role="button"],
-  [class*="to-primary-"] [role="button"],
-  .bg-gradient-to-br [role="button"],
-  .bg-gradient-to-r [role="button"] {
+  html[data-preview="true"] .bg-primary-600 a,
+  html[data-preview="true"] .bg-primary-700 a,
+  html[data-preview="true"] .bg-primary-800 a,
+  html[data-preview="true"] .bg-primary-900 a,
+  html[data-preview="true"] .bg-sky-600 a,
+  html[data-preview="true"] .bg-sky-700 a,
+  html[data-preview="true"] .bg-sky-800 a,
+  html[data-preview="true"] .bg-sky-900 a,
+  html[data-preview="true"] [class*="from-primary-"] a,
+  html[data-preview="true"] [class*="via-primary-"] a,
+  html[data-preview="true"] [class*="to-primary-"] a,
+  html[data-preview="true"] .bg-gradient-to-br a,
+  html[data-preview="true"] .bg-gradient-to-r a,
+  html[data-preview="true"] .bg-primary-600 button,
+  html[data-preview="true"] .bg-primary-700 button,
+  html[data-preview="true"] .bg-primary-800 button,
+  html[data-preview="true"] .bg-primary-900 button,
+  html[data-preview="true"] .bg-sky-600 button,
+  html[data-preview="true"] .bg-sky-700 button,
+  html[data-preview="true"] .bg-sky-800 button,
+  html[data-preview="true"] .bg-sky-900 button,
+  html[data-preview="true"] [class*="from-primary-"] button,
+  html[data-preview="true"] [class*="via-primary-"] button,
+  html[data-preview="true"] [class*="to-primary-"] button,
+  html[data-preview="true"] .bg-gradient-to-br button,
+  html[data-preview="true"] .bg-gradient-to-r button,
+  html[data-preview="true"] .bg-primary-600 [role="button"],
+  html[data-preview="true"] .bg-primary-700 [role="button"],
+  html[data-preview="true"] .bg-primary-800 [role="button"],
+  html[data-preview="true"] .bg-primary-900 [role="button"],
+  html[data-preview="true"] [class*="from-primary-"] [role="button"],
+  html[data-preview="true"] [class*="via-primary-"] [role="button"],
+  html[data-preview="true"] [class*="to-primary-"] [role="button"],
+  html[data-preview="true"] .bg-gradient-to-br [role="button"],
+  html[data-preview="true"] .bg-gradient-to-r [role="button"],
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-600 a,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-700 a,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-800 a,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-900 a,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-sky-600 a,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-sky-700 a,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-sky-800 a,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-sky-900 a,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [class*="from-primary-"] a,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [class*="via-primary-"] a,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [class*="to-primary-"] a,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-gradient-to-br a,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-gradient-to-r a,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-600 button,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-700 button,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-800 button,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-900 button,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-sky-600 button,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-sky-700 button,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-sky-800 button,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-sky-900 button,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [class*="from-primary-"] button,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [class*="via-primary-"] button,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [class*="to-primary-"] button,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-gradient-to-br button,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-gradient-to-r button,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-600 [role="button"],
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-700 [role="button"],
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-800 [role="button"],
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-primary-900 [role="button"],
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [class*="from-primary-"] [role="button"],
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [class*="via-primary-"] [role="button"],
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [class*="to-primary-"] [role="button"],
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-gradient-to-br [role="button"],
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) .bg-gradient-to-r [role="button"] {
     cursor: url('/cursor/cursor_blk/favicon-32x32.png'), pointer !important;
   }
 
   /* Override any inline styles */
-  [style*="cursor"] {
+  html[data-preview="true"] [style*="cursor"],
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [style*="cursor"] {
     cursor: url('/cursor/cursor_blu/favicon-32x32.png'), auto !important;
   }
 
-  [style*="cursor"].bg-primary-600,
-  [style*="cursor"].bg-primary-700,
-  [style*="cursor"].bg-primary-800,
-  [style*="cursor"].bg-primary-900,
-  [style*="cursor"].bg-sky-600,
-  [style*="cursor"].bg-sky-700,
-  [style*="cursor"].bg-sky-800,
-  [style*="cursor"].bg-sky-900,
-  [style*="cursor"][class*="from-primary-"],
-  [style*="cursor"][class*="via-primary-"],
-  [style*="cursor"][class*="to-primary-"],
-  [style*="cursor"].bg-gradient-to-br,
-  [style*="cursor"].bg-gradient-to-r {
+  html[data-preview="true"] [style*="cursor"].bg-primary-600,
+  html[data-preview="true"] [style*="cursor"].bg-primary-700,
+  html[data-preview="true"] [style*="cursor"].bg-primary-800,
+  html[data-preview="true"] [style*="cursor"].bg-primary-900,
+  html[data-preview="true"] [style*="cursor"].bg-sky-600,
+  html[data-preview="true"] [style*="cursor"].bg-sky-700,
+  html[data-preview="true"] [style*="cursor"].bg-sky-800,
+  html[data-preview="true"] [style*="cursor"].bg-sky-900,
+  html[data-preview="true"] [style*="cursor"][class*="from-primary-"],
+  html[data-preview="true"] [style*="cursor"][class*="via-primary-"],
+  html[data-preview="true"] [style*="cursor"][class*="to-primary-"],
+  html[data-preview="true"] [style*="cursor"].bg-gradient-to-br,
+  html[data-preview="true"] [style*="cursor"].bg-gradient-to-r,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [style*="cursor"].bg-primary-600,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [style*="cursor"].bg-primary-700,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [style*="cursor"].bg-primary-800,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [style*="cursor"].bg-primary-900,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [style*="cursor"].bg-sky-600,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [style*="cursor"].bg-sky-700,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [style*="cursor"].bg-sky-800,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [style*="cursor"].bg-sky-900,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [style*="cursor"][class*="from-primary-"],
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [style*="cursor"][class*="via-primary-"],
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [style*="cursor"][class*="to-primary-"],
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [style*="cursor"].bg-gradient-to-br,
+  body:not([data-config-page="true"]):not([data-preview-content="false"]) [style*="cursor"].bg-gradient-to-r {
     cursor: url('/cursor/cursor_blk/favicon-32x32.png'), auto !important;
+  }
+  
+  /* Configuration Page - always use standard system cursor */
+  body[data-config-page="true"] * {
+    cursor: auto !important;
+  }
+  
+  /* Configuration Page buttons/links - use pointer cursor */
+  body[data-config-page="true"] a,
+  body[data-config-page="true"] button,
+  body[data-config-page="true"] [role="button"],
+  body[data-config-page="true"] input[type="submit"],
+  body[data-config-page="true"] input[type="button"],
+  body[data-config-page="true"] input[type="reset"],
+  body[data-config-page="true"] select,
+  body[data-config-page="true"] .cursor-pointer {
+    cursor: pointer !important;
   }
 }
 
@@ -255,8 +353,6 @@ main {
     background-position: -200% 0;
   }
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@700&display=swap');
 
 .font-rubik {
   font-family: 'Rubik', 'Montserrat', 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
