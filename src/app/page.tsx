@@ -48,15 +48,6 @@ export default function Home() {
     setIsClient(true);
   }, []);
   
-  // Instructions content
-  const instructionsContent = [
-    { title: "Tree Removal Services", content: "We provide professional tree removal services for residential and commercial properties." },
-    { title: "Expert Arborists", content: "Our team of certified arborists ensures safe and efficient tree removal." },
-    { title: "Free Estimates", content: "Contact us today to schedule a free estimate for your tree removal needs." },
-    { title: "Emergency Services", content: "We offer 24/7 emergency tree removal services for storm damage and hazardous trees." },
-    { title: "Fully Insured", content: "All our services are fully insured for your peace of mind." }
-  ];
-  
   // Debug log to see what config is loaded
   console.log('Config in Home:', config);
   // Home page content from config
@@ -71,8 +62,43 @@ export default function Home() {
   const heroGradientColor = config?.pages?.Home?.heroGradientColor || '#0a2540';
   const infoBar = config?.infoBar || {};
 
+  // Instructions content
+  const instructionsContent = [
+    { title: "Tree Removal Services", content: "We provide professional tree removal services for residential and commercial properties." },
+    { title: "Expert Arborists", content: "Our team of certified arborists ensures safe and efficient tree removal." },
+    { title: home.heroCard1Text || "Hero Card 1", content: "This is the first hero card showcased on the homepage." },
+    { title: home.heroCard2Text || "Hero Card 2", content: "This is the second hero card displayed on the homepage." },
+    { title: home.heroCard3Text || "Hero Card 3", content: "This is the third hero card featured on the homepage." }
+  ];
+  
+  // Debug log to check button styles
+  useEffect(() => {
+    if (isClient) {
+      // Wait for 1 second before showing alert
+      setTimeout(() => {
+        console.log('BUTTON DEBUG:', {
+          'Schedule Button Properties': {
+            scheduleButtonColor: home.scheduleButtonColor,
+            scheduleButtonText: home.scheduleButtonText,
+            scheduleButtonTextColor: home.scheduleButtonTextColor,
+            heroScheduleButtonColor: home.heroScheduleButtonColor,
+            heroScheduleButtonTextColor: home.heroScheduleButtonTextColor
+          },
+          'Contact Button Properties': {
+            contactButtonColor: home.contactButtonColor,
+            contactButtonText: home.contactButtonText,
+            contactButtonTextColor: home.contactButtonTextColor,
+            heroContactButtonColor: home.heroContactButtonColor,
+            heroContactButtonTextColor: home.heroContactButtonTextColor,
+            heroContactButtonBorderColor: home.heroContactButtonBorderColor
+          }
+        });
+      }, 1000);
+    }
+  }, [isClient, home]);
+
   return (
-    <main className="min-h-screen" suppressHydrationWarning>
+    <div className="min-h-screen" suppressHydrationWarning>
       {/* Header (no config prop) */}
       <Header />
       
@@ -203,47 +229,47 @@ export default function Home() {
                 }}
                 className="inline-flex items-center justify-center w-full sm:w-auto px-6 sm:px-20 py-3 sm:py-4 min-w-[140px] sm:min-w-[320px] rounded-lg font-semibold text-base sm:text-2xl transition-all duration-300 shadow-xl hover:shadow-2xl relative group overflow-hidden text-left"
                 style={{
-                  background: home.heroScheduleButtonColor || '#2563eb',
-                  color: home.heroScheduleButtonTextColor || '#fff',
+                  background: home.scheduleButtonColor || '#c9ba18',
+                  color: home.scheduleButtonTextColor || '#ffffff',
                   border: 'none',
                 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                {schedulingButtonText}
+                {home.scheduleButtonText || 'Schedule Now'}
               </motion.a>
               <motion.a
                 href="/contact"
                 className="inline-flex items-center justify-center w-full sm:w-auto px-6 sm:px-20 py-3 sm:py-4 min-w-[140px] sm:min-w-[320px] rounded-lg font-semibold text-base sm:text-2xl transition-all duration-300 shadow-xl hover:shadow-2xl relative group overflow-hidden text-left"
                 style={{
-                  background: home.heroContactButtonColor || '#fff',
-                  color: home.heroContactButtonTextColor || '#1787c9',
-                  border: `2px solid ${home.heroContactButtonBorderColor || '#fff'}`,
+                  background: home.contactButtonColor || '#ffffff',
+                  color: home.contactButtonTextColor || '#4fc917',
+                  border: `2px solid ${home.contactButtonColor || '#ffffff'}`,
                   transition: 'all 0.3s',
                 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.background = home.heroContactButtonHoverBgColor || '#f3f3f3';
-                  e.currentTarget.style.color = home.heroContactButtonHoverTextColor || '#1787c9';
-                  e.currentTarget.style.border = `2px solid ${home.heroContactButtonHoverBorderColor || '#1787c9'}`;
+                  e.currentTarget.style.background = '#5cbe1a';
+                  e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.border = '2px solid #1787c9';
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.background = home.heroContactButtonColor || '#fff';
-                  e.currentTarget.style.color = home.heroContactButtonTextColor || '#1787c9';
-                  e.currentTarget.style.border = `2px solid ${home.heroContactButtonBorderColor || '#fff'}`;
+                  e.currentTarget.style.background = home.contactButtonColor || '#ffffff';
+                  e.currentTarget.style.color = home.contactButtonTextColor || '#4fc917';
+                  e.currentTarget.style.border = `2px solid ${home.contactButtonColor || '#ffffff'}`;
                 }}
               >
-                <span className="mr-2">Contact Us</span>
+                <span className="mr-2">{home.contactButtonText || 'Contact Us'}</span>
                 <ArrowRightIcon className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </motion.a>
             </div>
             {/* Hero boxes - single column on mobile, fixed width and aligned on desktop */}
             <div className="flex flex-col sm:flex-row sm:justify-start gap-4 sm:gap-6 w-full items-center">
                 {[
-                  { icon: <ShieldCheckIcon className="w-7 h-7" />, text: "Free Estimates" },
-                  { icon: <SparklesIcon className="w-7 h-7" />, text: "Expert Technicians" },
-                  { icon: <ClockIcon className="w-7 h-7" />, text: "Quick Turnaround" }
+                  { icon: <ShieldCheckIcon className="w-7 h-7" />, text: home.heroCard1Text || "Hero Card 1" },
+                  { icon: <SparklesIcon className="w-7 h-7" />, text: home.heroCard2Text || "Hero Card 2" },
+                  { icon: <ClockIcon className="w-7 h-7" />, text: home.heroCard3Text || "Hero Card 3" }
               ].map((item, index) => {
                 const boxNum = index + 1;
                 const boxBg = home[`heroBox${boxNum}BgColor`] || '#25647a';
@@ -735,7 +761,7 @@ export default function Home() {
 
       {/* Footer (no config prop) */}
       <Footer />
-    </main>
+    </div>
   )
 }
 

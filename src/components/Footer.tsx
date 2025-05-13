@@ -7,6 +7,7 @@ import { MapPinIcon, PhoneIcon, EnvelopeIcon, ClockIcon, UserGroupIcon } from '@
 import { usePrivacyPolicy, useTermsOfService } from './PolicyModals'
 import Image from 'next/image'
 import localConfig, { LocalConfig } from '@/config/localConfig'
+import { FooterStyle, SocialLinks, getFooterStyle, getSocialLinks, normalizeConfig } from '@/config/configFixTypes'
 import { useConfig } from '@/context/ConfigContext'
 
 // Define interfaces for the configuration objects
@@ -19,38 +20,6 @@ interface ContactInfo {
 interface Hours {
   weekday?: string;
   weekend?: string;
-}
-
-interface SocialLinks {
-  facebook?: string;
-  instagram?: string;
-  linkedin?: string;
-  twitter?: string;
-}
-
-// Define a FooterStyle interface for type safety
-interface FooterStyle {
-  backgroundColor?: string;
-  gradientFromColor?: string;
-  gradientToColor?: string;
-  titleColor?: string;
-  textColor?: string;
-  linkColor?: string;
-  linkHoverColor?: string;
-  socialIconColor?: string;
-  dividerColor?: string;
-  quickLinksTitleColor?: string;
-  contactInfoTitleColor?: string;
-  infoTitleColor?: string;
-  joinButtonBgColor?: string;
-  joinButtonTextColor?: string;
-  joinButtonHoverBgColor?: string;
-  hoursCardBgColor?: string;
-  hoursCardTextColor?: string;
-  hoursCardValueColor?: string;
-  copyrightTextColor?: string;
-  policyLinkColor?: string;
-  policyLinkHoverColor?: string;
 }
 
 // Add social icons imports
@@ -153,7 +122,8 @@ export default function Footer() {
         hours: latestConfig.hours
       });
       
-      return latestConfig;
+      // Normalize the config to ensure it has the correct structure
+      return normalizeConfig(latestConfig);
     };
     
     // Set the initial config from all sources
@@ -170,13 +140,13 @@ export default function Footer() {
       console.log('Footer detected specific footer config update');
       // If the event includes config detail, use it
       if (event.detail && event.detail.config) {
-        setCurrentConfig(prevConfig => ({
+        setCurrentConfig(prevConfig => normalizeConfig({
           ...prevConfig,
           ...event.detail.config
         }));
       } else {
         // Otherwise refresh from context
-        setCurrentConfig({...configFromContext});
+        setCurrentConfig(normalizeConfig({...configFromContext}));
       }
     };
     
@@ -184,12 +154,12 @@ export default function Footer() {
     const handleConfigSaved = (event: any) => {
       console.log('Footer detected config save');
       if (event.detail && event.detail.config) {
-        setCurrentConfig(prevConfig => ({
+        setCurrentConfig(prevConfig => normalizeConfig({
           ...prevConfig,
           ...event.detail.config
         }));
       } else {
-        setCurrentConfig({...configFromContext});
+        setCurrentConfig(normalizeConfig({...configFromContext}));
       }
     };
     
@@ -197,12 +167,12 @@ export default function Footer() {
     const handleFullConfigUpdate = (event: any) => {
       console.log('Footer detected full config update');
       if (event.detail && event.detail.config) {
-        setCurrentConfig(prevConfig => ({
+        setCurrentConfig(prevConfig => normalizeConfig({
           ...prevConfig,
           ...event.detail.config
         }));
       } else {
-        setCurrentConfig({...configFromContext});
+        setCurrentConfig(normalizeConfig({...configFromContext}));
       }
     };
 
@@ -248,19 +218,20 @@ export default function Footer() {
     };
   }, [configFromContext]);
   
-  // Get data from currentConfig
+  // Get data from currentConfig and normalize it with our utility functions
   const companyName = currentConfig.companyName || currentConfig.navBar?.siteTitle || "Davis Tree Removal";
   const description = currentConfig.description || "A trusted tree removal service in Duluth, GA.";
   const footerLinks = currentConfig.footerLinks || [];
-  const socialLinks: SocialLinks = typeof currentConfig.socialLinks === 'object' ? currentConfig.socialLinks as SocialLinks : {};
+  const socialLinks = getSocialLinks(currentConfig);
   const contactInfo = currentConfig.contactInfo || {};
   const hours = currentConfig.hours || {};
   const showJoinTeamButton = currentConfig.showJoinTeamButton || false;
   const joinTeamText = currentConfig.joinTeamText || "Join Our Team";
   const joinTeamLink = currentConfig.joinTeamLink || "/careers";
   const copyright = currentConfig.copyright || `© ${new Date().getFullYear()} ${companyName}. All rights reserved.`;
-  // Get footer styling with proper typing
-  const style = currentConfig.footerStyle || {} as FooterStyle;
+  
+  // Get footer styling with proper typing using the utility function
+  const style = getFooterStyle(currentConfig);
   const colors = {
     gradientFrom: style.gradientFromColor || "#ffffff",
     gradientTo: style.gradientToColor || "#f9fafb",

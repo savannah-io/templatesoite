@@ -1,5 +1,5 @@
 {
-  "name": "templatesoite",
+  "name": "auto_template",
   "version": "1.0.0",
   "description": "AutoSite Template Site",
   "scripts": {
@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "upload-images": "ts-node -P tsconfig.json scripts/upload_review_images.ts",
-    "supabase:migration": "supabase db push"
+    "supabase:migration": "supabase db push",
+    "post-publish": "node scripts/fix-config-types.js",
+    "validate-config": "node scripts/fix-config-types.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -39,7 +41,7 @@
     "tsdav": "^2.1.3"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
+    "@types/node": "^20.17.46",
     "@types/nodemailer": "^6.4.17",
     "@types/react": "^18",
     "@types/react-dom": "^18",
@@ -48,6 +50,6 @@
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.1",
-    "typescript": "^5.3.2"
+    "typescript": "^5.8.3"
   }
 }

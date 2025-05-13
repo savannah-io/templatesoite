@@ -1,4 +1,4 @@
-import { FaPhone, FaMapMarkerAlt, FaClock } from 'react-icons/fa';
+import { FaPhone, FaMapMarkerAlt, FaClock, FaInfoCircle } from 'react-icons/fa';
 
 interface InfoBarProps {
   config: any;
@@ -19,6 +19,13 @@ export default function InfoBar({ config }: InfoBarProps) {
     >
       <div className="container mx-auto px-4">
         <div className="flex flex-wrap justify-center md:justify-between gap-4 items-center">
+          {infoBarConfig.message && (
+            <div className="flex items-center" style={{ color: infoBarConfig.textColor || '#4b5563' }}>
+              <FaInfoCircle className="mr-2" />
+              <span>{infoBarConfig.message}</span>
+            </div>
+          )}
+          
           {infoBarConfig.showPhone && companyInfo.phone && (
             <div className="flex items-center" style={{ color: infoBarConfig.textColor || '#4b5563' }}>
               <FaPhone className="mr-2" />

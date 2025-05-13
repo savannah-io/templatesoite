@@ -1902,576 +1902,466 @@ export default function ConfigPage() {
 
   // Main render function
   return (
-    <div id="split-container" className="flex flex-col lg:flex-row h-screen w-full overflow-hidden" suppressHydrationWarning style={{ border: '6px solid var(--theme-color)' }}>
-      {/* Config Panel - Left Side */}
-      <div 
-        className={`w-full lg:h-screen overflow-y-auto flex flex-col bg-white lg:border-r lg:border-r-0`} 
-        style={{ 
-          width: isMobileDevice ? '100%' : `${splitPosition}%`,
-          borderRight: !isMobileDevice ? `2px solid ${themeColor}` : 'none'
-        }}
-        ref={configPanelRef}
-      >
-        {/* Header Bar */}
-        <div 
-          className={`flex justify-between items-center px-4 ${isMobileDevice ? 'py-2' : 'py-3'} relative overflow-hidden group`} 
-          style={{ 
-            background: `linear-gradient(135deg, var(--theme-color), ${themeColor}cc)`,
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-          }}
-        >
-          {/* Animated background effect */}
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute -inset-[10%] bg-white/10 rounded-full blur-xl transform translate-x-full group-hover:translate-x-0 transition-transform duration-1500"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-700"></div>
-          </div>
-          
-          <div className="flex items-center gap-3 relative z-10">
-            <div className="relative group/title">
-              <span className={`${isMobileDevice ? 'text-lg' : 'text-xl'} font-bold text-white tracking-wide bg-white px-2 py-1 rounded-sm`} style={{ color: 'black' }}>
-                MY_NEW_PROJECT
-              </span>
-            </div>
-            <div className="relative group/color">
-              {/* Color picker only, hex input removed */}
-              <div className="flex items-center gap-1">
-              <input
-                type="color"
-                value={themeColor}
-                onChange={e => {
-                  const newColor = e.target.value;
-                  setThemeColor(newColor);
-                  setConfig(prev => ({ ...prev, themeColor: newColor }));
-                  localStorage.setItem('themeColor', newColor);
-                }}
-                className={`${isMobileDevice ? 'w-6 h-6' : 'w-8 h-8'} border-2 border-white rounded cursor-pointer transition-all duration-300 hover:scale-105`}
-                title="Pick theme color"
-                style={{ boxShadow: '0 0 8px rgba(255, 255, 255, 0.5)' }}
-                id="themeColorPicker"
-              />
-              </div>
-              <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/color:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                Theme color
-              </span>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3 relative z-10">
-            {/* Save Changes Button */}
-            <button
-              type="button"
-              className="bg-white text-indigo-600 hover:bg-indigo-50 font-medium py-1.5 px-4 rounded-md shadow-sm border border-indigo-200 transition-colors duration-200 flex items-center gap-1"
-              onClick={handleSave}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
-              </svg>
-              Save
-            </button>
-            
-            {/* Publish button */}
-            <button
-              onClick={handlePublish}
-              disabled={isPublishing}
-              className={`
-                flex items-center gap-1 text-white py-1.5 px-4 rounded-md shadow-sm transition-colors duration-200
-                ${isPublishing 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-emerald-700 hover:bg-emerald-800 border border-emerald-800'
-                }
-              `}
-            >
-              {isPublishing ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Publishing...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  Publish
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Toast Notification */}
-        <Toast message="Changes saved successfully!" show={showToast} />
-
-        {/* Mobile warning banner */}
-        {isMobileDevice && (
-          <div id="mobile-info-banner" className="mx-4 mt-2 p-2 bg-blue-50 text-blue-800 rounded-lg shadow-sm flex items-center gap-2">
-            <svg className="w-5 h-5 flex-shrink-0 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <div className="flex-1">
-              <p className="font-medium text-sm">Mobile view enabled</p>
-              <p className="text-xs">Interface optimized for your device</p>
-            </div>
-            <button 
-              className="ml-auto text-blue-600 hover:text-blue-800" 
-              onClick={() => document.getElementById('mobile-info-banner')?.remove()}
-              aria-label="Close banner"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
-          </div>
-        )}
-
-        {/* Publish success/error message */}
-        {publishMessage && (
-          <div className={`mx-4 mt-4 p-3 rounded ${publishStatus === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-            {publishMessage}
-          </div>
-        )}
-
-        {/* Top Buttons */}
-        <section className={`${isMobileDevice ? 'mb-3 px-3 pt-2' : 'mb-6 flex flex-wrap gap-3 px-4 pt-6'} flex flex-wrap gap-2 justify-center`}>
-          <a 
-            href="https://www.color-hex.com/" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className={`px-4 ${isMobileDevice ? 'py-1 text-sm' : 'py-2'} rounded shadow font-semibold transition-colors`}
-            style={{ background: 'var(--theme-color)', color: '#fff' }}
-          >
-            COLORS
-          </a>
-          <a 
-            href="https://favicon.io/favicon-converter/" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className={`px-4 ${isMobileDevice ? 'py-1 text-sm' : 'py-2'} rounded shadow font-semibold transition-colors`}
-            style={{ background: 'var(--theme-color)', color: '#fff' }}
-          >
-            FAVICON
-          </a>
-          <a 
-            href="https://www.myfonts.com/pages/whatthefont" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className={`px-4 ${isMobileDevice ? 'py-1 text-sm' : 'py-2'} rounded shadow font-semibold transition-colors`}
-            style={{ background: 'var(--theme-color)', color: '#fff' }}
-          >
-            FONT FINDER
-          </a>
-        </section>
-
-        {/* Current Theme Link */}
-        <section className={`${isMobileDevice ? 'mb-3 px-3' : 'mb-6 px-4'} flex flex-col items-center`}>
-          <label className={`block font-semibold text-black ${isMobileDevice ? 'mb-0 text-sm' : 'mb-1'}`}>Current Theme Link:</label>
-          <div className="flex gap-2 items-center justify-center w-full max-w-xl">
+    <div className="min-h-screen bg-gray-50" id="config-page">
+      {/* Header */}
+      <header className="border-b border-gray-300 bg-white py-3 px-4 sticky top-0 z-50">
+        <div className="flex justify-between items-center">
+          {/* Left: Title */}
+          <div className="flex items-center gap-3">
             <input
               type="text"
-              className={`border rounded ${isMobileDevice ? 'px-2 py-1 text-sm' : 'px-3 py-2'} w-96 max-w-full`}
-              placeholder="Paste your palette/theme link here..."
-              value={themeLink}
-              onChange={e => {
-                const newLink = e.target.value;
-                setThemeLink(newLink);
-                setConfig(prev => ({ ...prev, themeLink: newLink }));
-                localStorage.setItem('themeLink', newLink);
-              }}
-              style={{ background: 'transparent', borderColor: 'var(--theme-color-light)', backdropFilter: 'blur(5px)' }}
+              value={headerTitle}
+              onChange={e => setHeaderTitle(e.target.value)}
+              className="text-xl font-bold text-gray-700 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-gray-400 focus:outline-none"
+              aria-label="Configuration Title"
             />
             <button
-              className={`${isMobileDevice ? 'px-3 py-1 text-sm' : 'px-4 py-2'} rounded shadow font-semibold transition-colors`}
-              style={{ background: 'var(--theme-color)', color: '#fff' }}
-              disabled={!themeLink.trim()}
-              onClick={() => {
-                if (themeLink.trim()) window.open(themeLink, '_blank');
-              }}
-            >Go</button>
+              onClick={() => setShowInstructions(true)}
+              className="text-gray-400 hover:text-gray-700"
+              aria-label="Show Instructions"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
           </div>
-        </section>
 
-        {/* Config Content */}
-        <div className={`flex-1 ${isMobileDevice ? 'pt-0 px-2' : 'p-4'} overflow-y-auto`}>
-          <div className={`${isMobileDevice ? 'w-full mt-0' : 'max-w-3xl mx-auto'} bg-gray-50 rounded-lg shadow ${isMobileDevice ? 'p-3' : 'p-6'}`}>
-            {/* Info Bar Section (collapsible) */}
-            <section className={`${isMobileDevice ? 'mb-4' : 'mb-8'} bg-white ${isMobileDevice ? 'p-3' : 'p-5'} rounded-lg shadow`} style={{ border: '2px solid var(--theme-color-light)' }}>
-              <button
-                className="flex items-center w-full text-left gap-2 mb-4 focus:outline-none"
-                onClick={() => setInfoBarExpanded((prev) => !prev)}
-                type="button"
-                style={{ color: '#111827' }}
-              >
-                <h2 className="text-xl font-bold">Info Bar</h2>
-                <span className="ml-2 text-xl transform transition-transform duration-200 info-bar-dropdown-icon text-gray-900">▼</span>
+          {/* Right: Actions & Preview Toggle */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 sm:mr-2">
+              <label htmlFor="themeColor" className="text-sm text-gray-600 hidden sm:inline">Theme:</label>
+              <input
+                type="color"
+                id="themeColor"
+                value={themeColor}
+                onChange={(e) => setThemeColor(e.target.value)}
+                className="w-8 h-8 p-0 border border-gray-300 rounded-sm cursor-pointer"
+              />
+            </div>
+
+            <div className="hidden sm:flex items-center">
+              <button onClick={handleUndo} disabled={history.length <= 1} className="p-2 text-gray-600 hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
               </button>
-              {infoBarExpanded && <InfoBarConfig config={config} setConfig={setConfig} />}
-            </section>
+              <button onClick={handleRedo} disabled={redoHistory.length === 0} className="p-2 text-gray-600 hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
+            </div>
 
-            {/* Nav Bar Section */}
-            <section className={`${isMobileDevice ? 'mb-4' : 'mb-8'} bg-white ${isMobileDevice ? 'p-3' : 'p-5'} rounded-lg shadow`} style={{ border: '2px solid var(--theme-color-light)' }}>
-              <NavBarConfig 
-                config={config} 
-                setConfig={setConfig} 
-                navBarExpanded={navBarExpanded} 
-                setNavBarExpanded={setNavBarExpanded}
-                handleRemovePage={handleRemovePage}
-              />
-            </section>
+            <div className="hidden sm:block border border-gray-300 h-6"></div>
 
-            {/* Footer Section */}
-            <section className={`${isMobileDevice ? 'mb-4' : 'mb-8'} bg-white ${isMobileDevice ? 'p-3' : 'p-5'} rounded-lg shadow`} style={{ border: '2px solid var(--theme-color-light)' }}>
-              <FooterConfig
-                config={config}
-                setConfig={setConfig}
-                footerExpanded={footerExpanded}
-                setFooterExpanded={setFooterExpanded}
-              />
-            </section>
+            <div className="flex items-center">
+              <button
+                onClick={() => setMobilePreview(!mobilePreview)}
+                className={`p-2 ${mobilePreview ? 'text-gray-900' : 'text-gray-600'} hover:text-gray-900`}
+                aria-label={mobilePreview ? "Switch to Desktop Preview" : "Switch to Mobile Preview"}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </button>
+            </div>
 
-            {/* Pages Section */}
-            <section className={`bg-white ${isMobileDevice ? 'p-3' : 'p-5'} rounded-lg shadow`} style={{ border: '2px solid var(--theme-color-light)' }}>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-800 mb-2">Pages</h2>
-                <button 
-                  className="px-4 py-2 rounded shadow font-medium transition-colors"
-                  style={{ background: 'var(--theme-color)', color: '#fff' }}
-                  onClick={handleAddPage}
+            <div className="hidden sm:block border border-gray-300 h-6"></div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSave}
+                className="px-3 py-1.5 border border-gray-300 bg-white text-gray-700 text-sm flex items-center gap-1 hover:bg-gray-50"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                <span className="hidden sm:inline">Save</span>
+              </button>
+              <button
+                onClick={handlePublish}
+                disabled={isPublishing}
+                className="px-3 py-1.5 bg-gray-700 text-white text-sm flex items-center gap-1 hover:bg-gray-600 disabled:opacity-50"
+              >
+                {isPublishing ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="hidden sm:inline">Publishing...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="hidden sm:inline">Publish</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+      
+      {/* Published Message */}
+      {publishMessage && (
+        <div className={`border-t border-b ${publishStatus === 'success' ? 'border-green-300 bg-green-50 text-green-700' : 'border-red-300 bg-red-50 text-red-700'} py-2 px-4 text-center`}>
+          {publishMessage}
+        </div>
+      )}
+      
+      {/* Loader if config not loaded yet */}
+      {!isClientLoaded && (
+        <div className="flex justify-center items-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-700 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading configuration...</p>
+          </div>
+        </div>
+      )}
+      
+      {/* Main content */}
+      <div id="split-container" className="relative flex h-[calc(100vh-57px)]" style={{ visibility: isClientLoaded ? 'visible' : 'hidden' }}>
+        {/* Config Panel */}
+        <div
+          ref={configPanelRef}
+          className="overflow-y-auto pb-40"
+          style={{ width: `${splitPosition}%`, maxWidth: isMobileDevice ? '100%' : undefined }}
+        >
+          {/* Mobile Preview Warning */}
+          {isMobileDevice && mobilePreview && (
+            <div className="bg-yellow-50 border border-yellow-300 p-3 m-4 text-sm text-yellow-800">
+              Mobile preview is not available on mobile devices. Please use a desktop browser for this feature.
+            </div>
+          )}
+          
+          <div className="p-4">
+            {/* Info Bar Configuration */}
+            {config.infoBar && (
+              <div className="mb-6 border border-gray-300 bg-white">
+                <div
+                  className="flex items-center justify-between w-full p-4 text-left focus:outline-none cursor-pointer"
+                  onClick={() => setInfoBarExpanded(prev => !prev)}
                 >
-                  Add Page
-                </button>
+                  <h2 className="text-xl font-bold text-gray-700">Info Bar Configuration</h2>
+                  <span className={`transform transition-duration-200 info-bar-dropdown-icon ${infoBarExpanded ? 'rotate-180' : ''}`}>▼</span>
+                </div>
+                {infoBarExpanded && (
+                  <div className="p-4 border-t border-gray-300">
+                    <InfoBarConfig config={config} setConfig={setConfig} />
+                  </div>
+                )}
               </div>
-              
-              <div className="space-y-4">
-                {/* Custom order: Home, Services, Reviews, Contact */}
-                {['Home', 'Services', 'Reviews', 'Contact'].map((pageKey) => {
-                  if (!(config.pages as any)[pageKey]) return null;
-                  const page = (config.pages as any)[pageKey];
-                  const setPage = (newPage: any) => setConfig((prev: any) => ({
-                    ...prev,
-                    pages: {
-                      ...(prev.pages as any),
-                      [pageKey]: newPage
-                    }
-                  }));
-                  const isExpanded = expandedPage === pageKey;
-                  return (
-                    <div key={pageKey} className="bg-gray-50 rounded-lg shadow p-4" style={{ border: '2px solid var(--theme-color-light)' }}>
-                      <div className="flex justify-between items-center cursor-pointer" onClick={() => {
-                        if (expandedPage === pageKey) {
-                          setExpandedPage(null);
-                        } else {
-                          setExpandedPage(pageKey);
-                        }
-                      }}>
-                        <h3 className="text-lg font-semibold text-gray-800">{pageKey} Page</h3>
-                        <span className="text-xl transform transition-transform duration-200 page-dropdown-icon text-gray-900">
-                          <span className="dropdown-arrow">▼</span>
-                        </span>
-                      </div>
-                      {isExpanded && (
-                        <div className="mt-4">
-                          {/* Hero Section for Home Page */}
-                          {pageKey === 'Home' && (
-                            <div className="mb-8">
-                              <div className="rounded-2xl shadow-2xl border border-[#8b5cf6] bg-white/80 p-4">
-                                <button
-                                  className="flex items-center w-full text-left gap-2 mb-4 focus:outline-none"
-                                  onClick={() => {
-                                    setShowHeroSection(prev => {
-                                      const newState = { ...prev };
-                                      newState[pageKey] = !prev[pageKey];
-                                      return newState;
-                                    });
-                                  }}
-                                  type="button"
-                                >
-                                  <h3 className="text-2xl font-bold text-purple-700">Hero Section</h3>
-                                  <span className="ml-2 text-xl transform transition-transform duration-200 hero-section-icon text-gray-900" data-page={pageKey}>
-                                    <span className="dropdown-arrow">▼</span>
-                                  </span>
-                                </button>
-                                {showHeroSection[pageKey] && (
-                                  <HeroSectionForm page={page} setPage={setPage} />
-                                )}
-                              </div>
-                              
-                              {/* Schedule Section Controls */}
-                              <ScheduleSection 
-                                page={page} 
-                                setPage={setPage} 
-                                showScheduleSection={showScheduleSection} 
-                                setShowScheduleSection={setShowScheduleSection} 
-                              />
-                              
-                              {/* Guarantee Section Controls */}
-                              <GuaranteeSection 
-                                page={page} 
-                                setPage={setPage} 
-                                showGuaranteeSection={showGuaranteeSection} 
-                                setShowGuaranteeSection={setShowGuaranteeSection} 
-                              />
-                              
-                              {/* Services Section Controls */}
-                              <ServicesSection 
-                                page={page} 
-                                setPage={setPage} 
-                                showServicesSection={showServicesSection} 
-                                setShowServicesSection={setShowServicesSection} 
-                              />
-                            </div>
-                          )}
-                          
-                          {/* Services Page Configuration */}
-                          {pageKey === 'Services' && (
-                            <div className="mb-8">
-                              <ServicePageConfig 
-                                page={page}
-                                setPage={setPage}
-                              />
-                            </div>
-                          )}
-                          
-                          {/* Reviews Page Configuration */}
-                          {pageKey === 'Reviews' && (
-                            <div className="mb-8">
-                              <ReviewPageConfig 
-                                page={page}
-                                setPage={setPage}
-                              />
-                            </div>
-                          )}
+            )}
+            
+            {/* Navbar Configuration */}
+            {config.navBar && (
+              <div className="mb-6 border border-gray-300 bg-white">
+                <div
+                  className="flex items-center justify-between w-full p-4 text-left focus:outline-none cursor-pointer"
+                  onClick={() => setNavBarExpanded(prev => !prev)}
+                >
+                  <h2 className="text-xl font-bold text-gray-700">Navigation Bar</h2>
+                  <span className={`transform transition-duration-200 ${navBarExpanded ? 'rotate-180' : ''}`}>▼</span>
+                </div>
+                {navBarExpanded && (
+                  <div className="p-4 border-t border-gray-300">
+                    <NavBarConfig config={config} setConfig={setConfig} />
+                  </div>
+                )}
+              </div>
+            )}
 
-                          {/* Contact Page Configuration */}
-                          {pageKey === 'Contact' && (
-                            <div className="mb-8">
-                              <ContactPageConfig 
-                                page={page}
-                                setPage={setPage}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
+            {/* Pages Configuration */}
+            <div className="mb-6 border border-gray-300 bg-white">
+              <h2 className="text-xl font-bold text-gray-700 p-4">Page Configuration</h2>
+              <div className="border-t border-gray-300">
+                {Object.entries(config.pages || {}).map(([pageKey, pageConfig], index) => (
+                  <div key={pageKey} className="border-b border-gray-300 last:border-b-0">
+                    <div
+                      className="flex items-center justify-between w-full p-4 text-left focus:outline-none cursor-pointer page-dropdown-icon"
+                      onClick={() => setExpandedPage(expandedPage === pageKey ? null : pageKey)}
+                    >
+                      <span className="font-bold text-gray-700">{pageKey} Page</span>
+                      <div className="flex items-center">
+                        {pageKey !== 'Home' && 
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemovePage(pageKey);
+                            }}
+                            className="mr-2 text-red-500 hover:text-red-700 focus:outline-none"
+                            aria-label={`Delete ${pageKey} Page`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        }
+                        <span className={`transform transition-duration-200 dropdown-arrow ${expandedPage === pageKey ? 'rotate-180' : ''}`}>▼</span>
+                      </div>
                     </div>
-                  );
-                })}
-                
-                {/* Render any other pages that aren't in the custom order */}
-                {Object.keys(config.pages as any)
-                  .filter(pageKey => !['Home', 'Services', 'Reviews', 'Contact'].includes(pageKey))
-                  .map((pageKey) => {
-                    const page = (config.pages as any)[pageKey];
-                    const setPage = (newPage: any) => setConfig((prev: any) => ({
-                      ...prev,
-                      pages: {
-                        ...(prev.pages as any),
-                        [pageKey]: newPage
-                      }
-                    }));
-                    const isExpanded = expandedPage === pageKey;
-                    return (
-                      <div key={pageKey} className="bg-white rounded-xl shadow p-4">
-                        <div className="flex justify-between items-center cursor-pointer" onClick={() => {
-                          if (expandedPage === pageKey) {
-                            setExpandedPage(null);
-                          } else {
-                            setExpandedPage(pageKey);
-                          }
-                        }}>
-                          <h3 className="text-lg font-semibold text-black">{pageKey} Page</h3>
-                          <span className="text-purple-600 text-xl transform transition-transform duration-200 page-dropdown-icon">
-                            <span className="dropdown-arrow">▼</span>
-                          </span>
-                        </div>
-                        {isExpanded && (
-                          <div className="mt-4">
-                            {/* Add any page-specific content here */}
+                    {expandedPage === pageKey && (
+                      <div className="p-4 border-t border-gray-300">
+                        {/* Home Page specific configuration */}
+                        {pageKey === 'Home' && (
+                          <div className="space-y-4">
+                            <HeroSectionForm page={pageConfig as any} setPage={(newPage: any) => setConfig((prev: any) => ({
+                              ...prev,
+                              pages: {
+                                ...prev.pages,
+                                [pageKey]: newPage
+                              }
+                            }))} />
+
+                            {/* Schedule Section */}
+                            <div className="border border-gray-300 p-4 mb-4">
+                              <div
+                                className="flex items-center justify-between w-full text-left focus:outline-none cursor-pointer"
+                                onClick={() => setShowScheduleSection(prev => !prev)}
+                              >
+                                <h3 className="text-lg font-bold text-gray-700">Schedule Section</h3>
+                                <span className={`transform transition-duration-200 ${showScheduleSection ? 'rotate-180' : ''}`}>▼</span>
+                              </div>
+                              {showScheduleSection && config.pages?.Home?.scheduleSection && (
+                                <div className="mt-4">
+                                  <ScheduleSection 
+                                    page={config.pages.Home}
+                                    setPage={(newPage: any) => setConfig((prev: any) => ({
+                                      ...prev,
+                                      pages: {
+                                        ...prev.pages,
+                                        Home: newPage
+                                      }
+                                    }))}
+                                    showScheduleSection={showScheduleSection}
+                                    setShowScheduleSection={setShowScheduleSection}
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Guarantee Section */}
+                            <div className="border border-gray-300 p-4 mb-4">
+                              <div
+                                className="flex items-center justify-between w-full text-left focus:outline-none cursor-pointer"
+                                onClick={() => setShowGuaranteeSection(prev => !prev)}
+                              >
+                                <h3 className="text-lg font-bold text-gray-700">Guarantee Section</h3>
+                                <span className={`transform transition-duration-200 ${showGuaranteeSection ? 'rotate-180' : ''}`}>▼</span>
+                              </div>
+                              {showGuaranteeSection && config.pages?.Home?.guaranteeSection && (
+                                <div className="mt-4">
+                                  <GuaranteeSection 
+                                    page={config.pages.Home}
+                                    setPage={(newPage: any) => setConfig((prev: any) => ({
+                                      ...prev,
+                                      pages: {
+                                        ...prev.pages,
+                                        Home: newPage
+                                      }
+                                    }))}
+                                    showGuaranteeSection={showGuaranteeSection}
+                                    setShowGuaranteeSection={setShowGuaranteeSection}
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Services Section */}
+                            <div className="border border-gray-300 p-4 mb-4">
+                              <div
+                                className="flex items-center justify-between w-full text-left focus:outline-none cursor-pointer"
+                                onClick={() => setShowServicesSection(prev => !prev)}
+                              >
+                                <h3 className="text-lg font-bold text-gray-700">Services Section</h3>
+                                <span className={`transform transition-duration-200 ${showServicesSection ? 'rotate-180' : ''}`}>▼</span>
+                              </div>
+                              {showServicesSection && (
+                                <div className="mt-4">
+                                  <ServicesSection 
+                                    page={config.pages.Home}
+                                    setPage={(newPage: any) => setConfig((prev: any) => ({
+                                      ...prev,
+                                      pages: {
+                                        ...prev.pages,
+                                        Home: newPage
+                                      }
+                                    }))}
+                                    showServicesSection={showServicesSection}
+                                    setShowServicesSection={setShowServicesSection}
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
-                    );
-                  })}
+                    )}
+                  </div>
+                ))}
               </div>
-            </section>
-
-            {/* Save/Reset/Export Buttons */}
-            <div className={`flex flex-wrap gap-4 ${isMobileDevice ? 'mt-4 gap-2' : 'mt-10'}`}>
-              <button 
-                className={`${isMobileDevice ? 'px-4 py-1 text-sm' : 'px-6 py-2'} rounded shadow font-bold`} 
-                style={{ background: 'var(--theme-color)', color: '#fff' }} 
-                onClick={(e) => {
-                  e.preventDefault();
-                  console.log('Bottom Save button clicked');
-                  handleSave();
-                }}
-                id="save-button-bottom"
-                type="button"
-              >
-                Save
-              </button>
-              <button className={`${isMobileDevice ? 'px-4 py-1 text-sm' : 'px-6 py-2'} bg-gray-200 text-gray-700 rounded shadow font-bold hover:bg-gray-300`} onClick={handleReset}>Reset</button>
-              <button className={`${isMobileDevice ? 'px-4 py-1 text-sm' : 'px-6 py-2'} rounded shadow font-bold`} style={{ background: 'var(--theme-color-light)', color: 'var(--theme-color)' }} onClick={handleExport}>Export</button>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Resizable Divider */}
-      {!isMobileDevice && (
-        <div 
-          ref={splitDividerRef}
-          className={`hidden lg:flex absolute top-0 bottom-0 w-2 cursor-col-resize z-20 flex-col items-center justify-center transition-colors ${isDragging ? 'bg-purple-200' : ''}`}
-          style={{ 
-            left: `${splitPosition}%`, 
-            transform: 'translateX(-50%)', 
-            background: 'var(--theme-color)'
-          }}
-          onMouseDown={handleDividerMouseDown}
-        >
-          <div className="h-16 flex flex-col items-center justify-center space-y-1">
-            <div className="w-0.5 h-8 bg-white opacity-70"></div>
-            <div className="w-0.5 h-8 bg-white opacity-70"></div>
-          </div>
-        </div>
-      )}
-
-      {/* Preview Panel - Right Side */}
-      {!isMobileDevice && (
-        <div 
-          className="w-full lg:h-screen bg-white hidden lg:block"
-          style={{ 
-            width: `${100 - splitPosition}%`, 
-            background: 'var(--theme-color-light)',
-            borderLeft: `2px solid ${themeColor}`
-          }}
-        >
-          {/* Preview header */}
+        {/* Resizable Divider */}
+        {!isMobileDevice && (
           <div 
-            className="h-12 flex items-center justify-between px-6 relative overflow-hidden group" 
+            ref={splitDividerRef}
+            className={`hidden lg:flex absolute top-0 bottom-0 w-2 cursor-col-resize z-20 flex-col items-center justify-center transition-colors ${isDragging ? 'bg-purple-200' : ''}`}
             style={{ 
-              background: `linear-gradient(135deg, var(--theme-color), ${themeColor}cc)`,
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+              left: `${splitPosition}%`, 
+              transform: 'translateX(-50%)', 
+              background: 'var(--theme-color)'
+            }}
+            onMouseDown={handleDividerMouseDown}
+          >
+            <div className="h-16 flex flex-col items-center justify-center space-y-1">
+              <div className="w-0.5 h-8 bg-white opacity-70"></div>
+              <div className="w-0.5 h-8 bg-white opacity-70"></div>
+            </div>
+          </div>
+        )}
+
+        {/* Preview Panel - Right Side */}
+        {!isMobileDevice && (
+          <div 
+            className="w-full lg:h-screen bg-white hidden lg:block"
+            style={{ 
+              width: `${100 - splitPosition}%`, 
+              background: 'var(--theme-color-light)',
+              borderLeft: `2px solid ${themeColor}`
             }}
           >
-            {/* Animated background effect */}
-            <div className="absolute inset-0 opacity-20">
-              <div className="absolute -inset-[10%] bg-white/10 rounded-full blur-xl transform translate-x-full group-hover:translate-x-0 transition-transform duration-1500"></div>
-              <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-700"></div>
-            </div>
-            
-            <div className="flex items-center gap-2 relative z-10">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              <span className="font-bold text-white tracking-wide relative z-10">Live Preview</span>
-              <div 
-                onClick={() => setShowInstructions(true)}
-                className="relative ml-1 cursor-pointer group/pulse"
-              >
-                <div className="h-5 w-5 rounded-full bg-white/30 flex items-center justify-center hover:bg-white/40 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="absolute inset-0 rounded-full bg-white/20 animate-ping opacity-75 duration-1000" style={{ animationIterationCount: 'infinite', animationDuration: '2s' }}></div>
-              </div>
-            </div>
-            
-            <div className="flex space-x-2 items-center relative z-10">
-              <div className="flex bg-white/10 p-0.5 rounded-md backdrop-blur-sm border border-white/10">
-                <button 
-                  className={`px-3 py-1 rounded text-xs font-medium transition-all duration-300 hover:scale-105 ${!mobilePreview ? 'bg-white/20' : ''}`}
-                  style={{ 
-                    color: '#fff'
-                  }}
-                  onClick={() => setMobilePreview(false)}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    <span>Desktop</span>
-                  </div>
-                </button>
-                <button 
-                  className={`px-3 py-1 rounded text-xs font-medium transition-all duration-300 hover:scale-105 ${mobilePreview ? 'bg-white/20' : ''}`}
-                  style={{ 
-                    color: '#fff' 
-                  }}
-                  onClick={() => setMobilePreview(true)}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    <span>Mobile</span>
-                  </div>
-                </button>
+            {/* Preview header */}
+            <div 
+              className="h-12 flex items-center justify-between px-6 relative overflow-hidden group" 
+              style={{ 
+                background: `linear-gradient(135deg, var(--theme-color), ${themeColor}cc)`,
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+              }}
+            >
+              {/* Animated background effect */}
+              <div className="absolute inset-0 opacity-20">
+                <div className="absolute -inset-[10%] bg-white/10 rounded-full blur-xl transform translate-x-full group-hover:translate-x-0 transition-transform duration-1500"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-700"></div>
               </div>
               
-              <button 
-                className="px-3 py-1 rounded text-xs font-medium transition-all duration-300 hover:shadow-lg hover:scale-105 flex items-center gap-1.5"
-                style={{ 
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(4px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)', 
-                  color: '#fff' 
-                }}
-                onClick={() => window.open('/preview', '_blank')}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              <div className="flex items-center gap-2 relative z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <span>New Tab</span>
-              </button>
-            </div>
-          </div>
-          
-          {/* Preview content */}
-          <div className="w-full h-[calc(100vh-3rem)] overflow-hidden flex items-center justify-center" style={{ background: 'var(--theme-color-light)' }}>
-            {mobilePreview ? (
-              <div className="bg-gray-800 rounded-3xl p-3 shadow-xl w-[375px] h-[85vh] overflow-hidden">
-                <div className="w-full h-6 flex justify-center items-center mb-1">
-                  <div className="w-20 h-3 bg-gray-700 rounded-full"></div>
-                </div>
-                <div className="bg-white h-[calc(100%-1.75rem)] rounded-2xl overflow-hidden">
-                  <iframe 
-                    src="/preview" 
-                    className="w-full h-full border-none"
-                    title="Mobile Website Preview"
-                    id="preview-mobile"
-                    data-preview-frame="true"
-                  />
+                <span className="font-bold text-white tracking-wide relative z-10">Live Preview</span>
+                <div 
+                  onClick={() => setShowInstructions(true)}
+                  className="relative ml-1 cursor-pointer group/pulse"
+                >
+                  <div className="h-5 w-5 rounded-full bg-white/30 flex items-center justify-center hover:bg-white/40 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="absolute inset-0 rounded-full bg-white/20 animate-ping opacity-75 duration-1000" style={{ animationIterationCount: 'infinite', animationDuration: '2s' }}></div>
                 </div>
               </div>
-            ) : (
-              <iframe 
-                src="/preview" 
-                className="w-full h-full border-none"
-                title="Website Preview"
-                id="preview-desktop"
-                data-preview-frame="true"
-              />
-            )}
+              
+              <div className="flex space-x-2 items-center relative z-10">
+                <div className="flex bg-white/10 p-0.5 rounded-md backdrop-blur-sm border border-white/10">
+                  <button 
+                    className={`px-3 py-1 rounded text-xs font-medium transition-all duration-300 hover:scale-105 ${!mobilePreview ? 'bg-white/20' : ''}`}
+                    style={{ 
+                      color: '#fff'
+                    }}
+                    onClick={() => setMobilePreview(false)}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      <span>Desktop</span>
+                    </div>
+                  </button>
+                  <button 
+                    className={`px-3 py-1 rounded text-xs font-medium transition-all duration-300 hover:scale-105 ${mobilePreview ? 'bg-white/20' : ''}`}
+                    style={{ 
+                      color: '#fff' 
+                    }}
+                    onClick={() => setMobilePreview(true)}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <span>Mobile</span>
+                    </div>
+                  </button>
+                </div>
+                
+                <button 
+                  className="px-3 py-1 rounded text-xs font-medium transition-all duration-300 hover:shadow-lg hover:scale-105 flex items-center gap-1.5"
+                  style={{ 
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    backdropFilter: 'blur(4px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)', 
+                    color: '#fff' 
+                  }}
+                  onClick={() => window.open('/preview', '_blank')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  <span>New Tab</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* Preview content */}
+            <div className="w-full h-[calc(100vh-3rem)] overflow-hidden flex items-center justify-center" style={{ background: 'var(--theme-color-light)' }}>
+              {mobilePreview ? (
+                <div className="bg-gray-800 rounded-3xl p-3 shadow-xl w-[375px] h-[85vh] overflow-hidden">
+                  <div className="w-full h-6 flex justify-center items-center mb-1">
+                    <div className="w-20 h-3 bg-gray-700 rounded-full"></div>
+                  </div>
+                  <div className="bg-white h-[calc(100%-1.75rem)] rounded-2xl overflow-hidden">
+                    <iframe 
+                      src="/preview" 
+                      className="w-full h-full border-none"
+                      title="Mobile Website Preview"
+                      id="preview-mobile"
+                      data-preview-frame="true"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <iframe 
+                  src="/preview" 
+                  className="w-full h-full border-none"
+                  title="Website Preview"
+                  id="preview-desktop"
+                  data-preview-frame="true"
+                />
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Back to Top Button - Mobile Only */}
-      {isMobileDevice && showBackToTop && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-6 right-6 p-3 rounded-full shadow-lg z-50 text-white"
-          style={{ background: 'var(--theme-color)' }}
-          aria-label="Back to top"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
-          </svg>
-        </button>
-      )}
+        {/* Back to Top Button - Mobile Only */}
+        {isMobileDevice && showBackToTop && (
+          <button
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 p-3 rounded-full shadow-lg z-50 text-white"
+            style={{ background: 'var(--theme-color)' }}
+            aria-label="Back to top"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+            </svg>
+          </button>
+        )}
+      </div>
     </div>
   );
 }

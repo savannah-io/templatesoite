@@ -1,120 +1,9 @@
-// Define the type for the localConfig object
-// Last updated: 2025-05-13T02:06:49.846Z
-export interface LocalConfig {
-  showLogo: boolean;
-  infoBar: {
-    backgroundColor: string;
-    phone: string;
-    address: string;
-    hours: string;
-  };
-  navBar: {
-    backgroundColor: string;
-    textColor: string;
-    logo: string;
-    siteTitle: string;
-    siteTitleGradientFrom: string;
-    siteTitleGradientTo: string;
-    scheduleButtonText: string;
-    scheduleButtonColor: string;
-    activeTabColor: string;
-    navLinks: { path: string; label: string }[];
-  };
-  pages: {
-    Home: {
-      badge: string;
-      title: string;
-      location: string;
-      content: string;
-      subtitle2: string;
-      heroGradientTop: string;
-      heroGradientBottom: string;
-      heroTitleColor: string;
-      heroLocationColor: string;
-      heroContentColor: string;
-      heroBadgeColor: string;
-      heroBadgeTitleColor: string;
-      heroScheduleButtonColor: string;
-      heroScheduleButtonTextColor: string;
-      heroContactButtonColor: string;
-      heroContactButtonTextColor: string;
-      heroContactButtonBorderColor: string;
-      heroBox1BgColor: string;
-      heroBox1TextColor: string;
-      heroBox1BorderColor: string;
-      heroBox1IconBgColor: string;
-      heroBox1IconColor: string;
-      heroBox2BgColor: string;
-      heroBox2TextColor: string;
-      heroBox2BorderColor: string;
-      heroBox2IconBgColor: string;
-      heroBox2IconColor: string;
-      heroBox3BgColor: string;
-      heroBox3TextColor: string;
-      heroBox3BorderColor: string;
-      heroBox3IconBgColor: string;
-      heroBox3IconColor: string;
-    };
-  };
-  services: {
-    title: string;
-    description: string;
-    items: {
-      id: string;
-      title: string;
-      description: string;
-      image: string;
-      link: string;
-    }[];
-  };
-  guaranteeItems: {
-    id: string;
-    title: string;
-    description: string;
-    icon: string;
-  }[];
-  description: string;
-  contactInfo: {
-    address: string;
-    phone: string;
-    email: string;
-  };
-  hours: {
-    weekday: string;
-    weekend: string;
-  };
-  footerLinks: {
-    path: string;
-    label: string;
-  }[];
-  socialLinks: {
-    platform: string;
-    url: string;
-  }[];
-  schedulingButtonText: string;
-  servicePages: {
-    [key: string]: {
-      title: string;
-      description: string;
-      image: string;
-      content: string;
-      features: string[];
-      ctaText: string;
-      faqItems: {
-        question: string;
-        answer: string;
-      }[];
-    };
-  };
-  _lastUpdated?: string;
-}
-
-const localConfig: LocalConfig = {
+{
   "showLogo": false,
   "infoBar": {
     "backgroundColor": "#f5d6d6",
     "phone": "(XXX) XXX-XXXX",
-    "address": "*ENTER_ADDESS_HERE*",
+    "address": "*ENTER_ADDRESS_HERE*",
     "hours": "*DAY-DAY: TIME AM - TIME PM*",
     "textColor": "#000000"
   },
@@ -150,20 +39,20 @@ const localConfig: LocalConfig = {
   "pages": {
     "Home": {
       "badge": "TREE REMOVAL SERVICE",
-      "title": "Davis Tree Removal",
-      "location": "Watkinsville, Georgia",
+      "title": "*ENTER_NAME*",
+      "location": "*CITY, STATE*",
       "content": "<p>We provide top-quality tree removal services in Duluth, GA.</p>",
       "subtitle2": "Our Prices Won't Stump You",
-      "heroImage": "dew.png",
+      "heroImage": "pink_templates.png",
       "heroGradientColor": "#1c3f31",
       "heroRadialColor": "#387e62",
       "heroGradientTop": "#387e62",
       "heroGradientMiddle": "#387e62",
       "heroGradientBottom": "#387e62",
       "heroGradientLeft": "#387e62",
-      "heroBadgeColor": "#74cca98e",
-      "heroBadgeTitleColor": "#387e62",
-      "heroTitleColor": "#ffffff",
+      "heroBadgeColor": "#f5d6d6",
+      "heroBadgeTitleColor": "#080808",
+      "heroTitleColor": "#f9fafb",
       "heroLocationColor": "#000000",
       "heroSubtitleColor": "#fff",
       "heroContentColor": "#fff",
@@ -282,7 +171,10 @@ const localConfig: LocalConfig = {
         "buttonHoverBgColor": "#1d4ed8",
         "buttonHoverTextColor": "#ffffff",
         "buttonHoverBorderColor": "#1e40af"
-      }
+      },
+      "subtitle": "",
+      "heroOverlayColor": "#b80000",
+      "scheduleButtonColor": "#c9ba18"
     },
     "Contact": {
       "title": "Contact Us",
@@ -535,36 +427,34 @@ const localConfig: LocalConfig = {
   "showJoinTeamButton": true,
   "joinTeamText": "*CALL_TO_ACTION*",
   "joinTeamLink": "/careers",
-  "copyright": "© 2024 Davis Tree Removal. All rights reserved.",
+  "copyright": "© 2025 Davis Tree Removal. All rights reserved.",
   "footerStyle": {
     "backgroundColor": "#ffffff",
-    "gradientFromColor": "rgba(250, 250, 250, 1.00)",
-    "gradientToColor": "rgba(245, 198, 198, 0.74)",
-    "titleColor": "#4f46e5",
-    "textColor": "#4b5563",
-    "linkColor": "#4b5563",
-    "linkHoverColor": "#4f46e5",
-    "socialIconColor": "#4f46e5",
-    "dividerColor": "rgba(79, 70, 229, 0.2)",
-    "quickLinksTitleColor": "#4f46e5",
-    "contactInfoTitleColor": "#4f46e5",
-    "infoTitleColor": "#4f46e5",
-    "joinButtonBgColor": "#4f46e5",
-    "joinButtonTextColor": "#ffffff",
-    "joinButtonHoverBgColor": "#4338ca",
-    "hoursCardBgColor": "rgba(255, 255, 255, 0.6)",
-    "hoursCardTextColor": "#4b5563",
-    "hoursCardValueColor": "#4f46e5",
+    "gradientFromColor": "rgba(5, 5, 5, 1.00)",
+    "gradientToColor": "rgba(5, 5, 5, 1.00)",
+    "titleColor": "rgba(238, 191, 191, 1.00)",
+    "textColor": "rgba(255, 255, 255, 1.00)",
+    "linkColor": "rgba(240, 240, 240, 1.00)",
+    "linkHoverColor": "rgba(238, 191, 191, 1.00)",
+    "socialIconColor": "rgba(238, 191, 191, 1.00)",
+    "dividerColor": "rgba(253, 201, 201, 0.20)",
+    "quickLinksTitleColor": "rgba(238, 191, 191, 1.00)",
+    "contactInfoTitleColor": "rgba(238, 191, 191, 1.00)",
+    "infoTitleColor": "rgba(238, 191, 191, 1.00)",
+    "joinButtonBgColor": "rgba(238, 191, 191, 1.00)",
+    "joinButtonTextColor": "rgba(3, 3, 3, 1.00)",
+    "joinButtonHoverBgColor": "rgba(219, 191, 191, 1.00)",
+    "hoursCardBgColor": "rgba(245, 245, 245, 0.04)",
+    "hoursCardTextColor": "rgba(245, 245, 245, 1.00)",
+    "hoursCardValueColor": "rgba(238, 191, 191, 1.00)",
     "copyrightTextColor": "#6b7280",
-    "policyLinkColor": "#6b7280",
-    "policyLinkHoverColor": "#4f46e5"
+    "policyLinkColor": "rgba(240, 240, 240, 1.00)",
+    "policyLinkHoverColor": "rgba(238, 191, 191, 1.00)"
   },
   "schedulingButtonText": "Schedule Now",
   "themeColor": "#a259e6",
-  "_timestamp": "2025-05-13T02:06:48.349Z",
-  "_lastUpdated": "2025-05-13T02:06:49.846Z",
+  "_timestamp": "2025-05-13T03:58:41.959Z",
+  "_lastUpdated": "2025-05-13T03:58:43.731Z",
   "themeLink": "",
   "companyName": "*ENTER_NAME*"
-};
-
-export default localConfig;
+}

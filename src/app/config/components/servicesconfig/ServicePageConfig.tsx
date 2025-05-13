@@ -1342,27 +1342,25 @@ export default function ServicePageConfig({
       
       {/* Call to Action Section */}
       <div className="rounded-2xl shadow-xl bg-amber-50 border-2 border-amber-200 p-6">
-        <button
-          className="flex items-center w-full text-left gap-2 focus:outline-none"
+        <div
+          className="flex items-center w-full text-left gap-2 focus:outline-none cursor-pointer"
           onClick={() => setShowCtaSection(!showCtaSection)}
-          type="button"
         >
           <h3 className="text-xl font-bold text-amber-800">Call to Action Section</h3>
           <span className={`ml-auto text-amber-600 text-xl transform transition-transform duration-200 ${showCtaSection ? 'rotate-180' : ''}`}>▼</span>
-        </button>
+        </div>
         
         {showCtaSection && (
           <div className="space-y-6 mt-6">
             {/* CTA Content */}
             <div className="mb-4 border-2 border-amber-200 rounded-xl bg-amber-50 p-4">
-              <button
-                className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none"
+              <div
+                className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none cursor-pointer"
                 onClick={() => setShowCtaContent(!showCtaContent)}
-                type="button"
               >
                 <h4 className="text-lg font-bold text-amber-700">CTA Content</h4>
                 <span className={`ml-2 transform transition-transform duration-200 ${showCtaContent ? 'rotate-180' : ''}`}>▼</span>
-              </button>
+              </div>
               
               {showCtaContent && (
                 <div className="pl-2 pt-2">

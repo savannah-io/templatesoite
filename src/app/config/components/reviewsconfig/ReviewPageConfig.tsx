@@ -336,27 +336,25 @@ export default function ReviewPageConfig({
       
       {/* Reviews Section Configuration */}
       <div className="rounded-2xl shadow-2xl border border-[#c4b5fd] bg-white/80 p-8 mb-8">
-        <button
-          className="flex items-center w-full text-left gap-2 mb-6 focus:outline-none"
+        <div
+          className="flex items-center w-full text-left gap-2 mb-6 focus:outline-none cursor-pointer"
           onClick={() => setShowReviewsSection(!showReviewsSection)}
-          type="button"
         >
           <h3 className="text-2xl font-bold text-black">Reviews Section</h3>
           <span className={`ml-2 text-purple-600 text-xl transform transition-transform duration-200 ${showReviewsSection ? 'rotate-180' : ''}`}>▼</span>
-        </button>
+        </div>
         
         {showReviewsSection && (
           <div className="space-y-4">
             {/* Reviews Section Content */}
             <div className="mb-4 border-2 border-emerald-200 rounded-xl bg-emerald-50 p-4">
-              <button
-                className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none"
+              <div
+                className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none cursor-pointer"
                 onClick={() => setShowReviewsContent(!showReviewsContent)}
-                type="button"
               >
                 <h4 className="text-lg font-bold text-emerald-700">Section Content</h4>
                 <span className={`ml-2 transform transition-transform duration-200 ${showReviewsContent ? 'rotate-180' : ''}`}>▼</span>
-              </button>
+              </div>
               
               {showReviewsContent && (
                 <div className="pl-2 pt-2">
@@ -609,27 +607,25 @@ export default function ReviewPageConfig({
       
       {/* Call to Action Section */}
       <div className="rounded-2xl shadow-2xl border border-[#c4b5fd] bg-white/80 p-8 mb-8">
-        <button
-          className="flex items-center w-full text-left gap-2 mb-6 focus:outline-none"
+        <div
+          className="flex items-center w-full text-left gap-2 mb-6 focus:outline-none cursor-pointer"
           onClick={() => setShowCtaSection(!showCtaSection)}
-          type="button"
         >
           <h3 className="text-2xl font-bold text-black">Call to Action Section</h3>
           <span className={`ml-2 text-purple-600 text-xl transform transition-transform duration-200 ${showCtaSection ? 'rotate-180' : ''}`}>▼</span>
-        </button>
+        </div>
         
         {showCtaSection && (
           <div className="space-y-4">
             {/* CTA Title and Description */}
             <div className="mb-4 border-2 border-cyan-200 rounded-xl bg-cyan-50 p-4">
-              <button
-                className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none"
+              <div
+                className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none cursor-pointer"
                 onClick={() => setShowCtaTitle(!showCtaTitle)}
-                type="button"
               >
                 <h4 className="text-lg font-bold text-cyan-700">CTA Content</h4>
                 <span className={`ml-2 transform transition-transform duration-200 ${showCtaTitle ? 'rotate-180' : ''}`}>▼</span>
-              </button>
+              </div>
               
               {showCtaTitle && (
                 <div className="pl-2 pt-2">
@@ -680,14 +676,13 @@ export default function ReviewPageConfig({
             
             {/* CTA Buttons */}
             <div className="mb-4 border-2 border-teal-200 rounded-xl bg-teal-50 p-4">
-              <button
-                className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none"
+              <div
+                className="flex items-center w-full text-left gap-2 mb-2 focus:outline-none cursor-pointer"
                 onClick={() => setShowCtaButtons(!showCtaButtons)}
-                type="button"
               >
                 <h4 className="text-lg font-bold text-teal-700">CTA Buttons</h4>
                 <span className={`ml-2 transform transition-transform duration-200 ${showCtaButtons ? 'rotate-180' : ''}`}>▼</span>
-              </button>
+              </div>
               
               {showCtaButtons && (
                 <div className="pl-2 pt-2">

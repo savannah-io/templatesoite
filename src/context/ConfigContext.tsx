@@ -2,6 +2,7 @@
 'use client';
 
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import { normalizeConfig } from '@/config/configFixTypes';
 
 interface ConfigContextType {
   config: any;
@@ -11,14 +12,20 @@ interface ConfigContextType {
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
 
 export function ConfigProvider({ config: initialConfig, children }: { config: any; children: ReactNode }) {
-  const [config, setConfig] = useState(initialConfig);
+  // Normalize the initial config to ensure it has the correct structure
+  const [config, setConfig] = useState(normalizeConfig(initialConfig));
   
   // Function to reload configuration from the server
   const refreshConfig = async () => {
     try {
       // First try to get config from window global (if available)
       if (typeof window !== 'undefined' && (window as any).__CURRENT_CONFIG__) {
-        setConfig((window as any).__CURRENT_CONFIG__);
+        const newConfig = normalizeConfig((window as any).__CURRENT_CONFIG__);
+        setConfig(newConfig);
+        console.log("Config updated from window.__CURRENT_CONFIG__", 
+          newConfig?.pages?.Home?.heroScheduleButtonColor,
+          newConfig?.pages?.Home?.heroContactButtonColor
+        );
         return;
       }
       
@@ -28,10 +35,11 @@ export function ConfigProvider({ config: initialConfig, children }: { config: an
       
       if (response.ok) {
         const freshConfig = await response.json();
-        setConfig(freshConfig);
+        const normalizedConfig = normalizeConfig(freshConfig);
+        setConfig(normalizedConfig);
         // Store in window for future reference
         if (typeof window !== 'undefined') {
-          (window as any).__CURRENT_CONFIG__ = freshConfig;
+          (window as any).__CURRENT_CONFIG__ = normalizedConfig;
         }
       } else {
         throw new Error('Failed to fetch config');
@@ -45,7 +53,7 @@ export function ConfigProvider({ config: initialConfig, children }: { config: an
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.config) {
-            setConfig(data.config);
+            setConfig(normalizeConfig(data.config));
           }
         }
       } catch (fallbackError) {
@@ -59,25 +67,25 @@ export function ConfigProvider({ config: initialConfig, children }: { config: an
     if (typeof window !== 'undefined') {
       // Check for window global config first (from layout.tsx)
       if ((window as any).__CURRENT_CONFIG__) {
-        setConfig((window as any).__CURRENT_CONFIG__);
+        setConfig(normalizeConfig((window as any).__CURRENT_CONFIG__));
       }
       
       // Check if we're in a preview context and there's a preview config available
       if ((window as any).__PREVIEW_CONFIG__) {
-        setConfig((window as any).__PREVIEW_CONFIG__);
+        setConfig(normalizeConfig((window as any).__PREVIEW_CONFIG__));
       }
       
       // Listen for preview config loaded event
       const handlePreviewConfigLoaded = () => {
         if ((window as any).__PREVIEW_CONFIG__) {
-          setConfig((window as any).__PREVIEW_CONFIG__);
+          setConfig(normalizeConfig((window as any).__PREVIEW_CONFIG__));
         }
       };
       
       // Listen for config-loaded event (from layout.tsx)
       const handleConfigLoaded = () => {
         if ((window as any).__CURRENT_CONFIG__) {
-          setConfig((window as any).__CURRENT_CONFIG__);
+          setConfig(normalizeConfig((window as any).__CURRENT_CONFIG__));
         }
       };
       

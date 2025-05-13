@@ -1,6 +1,12 @@
 'use client';
 
+import React, { useState } from 'react';
+
 export default function InfoBarConfig({ config, setConfig }: { config: any, setConfig: (v: any) => void }) {
+  // Use infoBar from config prop
+  const infoBar = config.infoBar || {};
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   // Helper function to update preview iframes when colors change
   const updatePreviewIframes = (updatedConfig: any) => {
     if (typeof window !== 'undefined') {
@@ -74,82 +80,163 @@ export default function InfoBarConfig({ config, setConfig }: { config: any, setC
   };
 
   return (
-    <div className="mb-6 p-6 bg-white border-2 border-purple-300 rounded-xl shadow-lg">
-      <h2 className="text-xl font-bold text-black mb-4">Info Bar</h2>
-      <div className="mb-2 flex items-center gap-4">
-        <label className="font-semibold text-black mr-2">Background Color:</label>
-        <input
-          type="color"
-          value={config.infoBar?.backgroundColor || '#1787c9'}
-          onChange={e => updateColor('backgroundColor', e.target.value)}
-          className="w-10 h-10 border rounded"
-        />
-        <input
-          type="text"
-          value={config.infoBar?.backgroundColor || '#1787c9'}
-          onChange={e => {
-            const val = e.target.value;
-            if (/^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/.test(val) || val === '') {
-              updateColor('backgroundColor', val);
-            }
-          }}
-          className="ml-2 text-xs border rounded px-2 py-1 w-20"
-          maxLength={7}
-          placeholder="#1787c9"
-        />
+    <div className="border border-gray-200 rounded-lg p-4 mb-4">
+      <div 
+        className="flex justify-between items-center cursor-pointer mb-3"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
+        <h3 className="text-lg font-medium text-gray-900">Info Bar Configuration</h3>
+        <span>{isCollapsed ? '▼' : '▲'}</span>
       </div>
-      <div className="mb-2 flex items-center gap-4">
-        <label className="font-semibold text-black mr-2">Phone:</label>
-        <input
-          type="text"
-          value={config.infoBar?.phone || ''}
-          onChange={e => setConfig({ ...config, infoBar: { ...config.infoBar, phone: e.target.value } })}
-          className="border rounded px-2 py-1 w-56"
-          placeholder="Phone"
-        />
-      </div>
-      <div className="mb-2 flex items-center gap-4">
-        <label className="font-semibold text-black mr-2">Address:</label>
-        <input
-          type="text"
-          value={config.infoBar?.address || ''}
-          onChange={e => setConfig({ ...config, infoBar: { ...config.infoBar, address: e.target.value } })}
-          className="border rounded px-2 py-1 w-96"
-          placeholder="Address"
-        />
-      </div>
-      <div className="mb-2 flex items-center gap-4">
-        <label className="font-semibold text-black mr-2">Hours:</label>
-        <input
-          type="text"
-          value={config.infoBar?.hours || ''}
-          onChange={e => setConfig({ ...config, infoBar: { ...config.infoBar, hours: e.target.value } })}
-          className="border rounded px-2 py-1 w-64"
-          placeholder="Hours"
-        />
-      </div>
-      <div className="mb-2 flex items-center gap-4">
-        <label className="font-semibold text-black mr-2">Text Color:</label>
-        <input
-          type="color"
-          value={config.infoBar?.textColor || '#ffffff'}
-          onChange={e => updateColor('textColor', e.target.value)}
-          className="w-10 h-10 border rounded"
-        />
-        <input
-          type="text"
-          value={config.infoBar?.textColor || '#ffffff'}
-          onChange={e => {
-            const val = e.target.value;
-            if (/^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/.test(val) || val === '') {
-              updateColor('textColor', val);
-            }
-          }}
-          className="ml-2 text-xs border rounded px-2 py-1 w-20"
-          maxLength={7}
-          placeholder="#ffffff"
-        />
-      </div>
+      
+      {!isCollapsed && (
+        <div className="space-y-4">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Message:</label>
+            <input
+              type="text"
+              className="w-full p-2 border border-gray-300"
+              value={infoBar.message || ''}
+              onChange={(e) => {
+                setConfig({
+                  ...config,
+                  infoBar: {
+                    ...infoBar,
+                    message: e.target.value
+                  }
+                });
+              }}
+              placeholder="Info bar message"
+            />
+            <p className="text-xs text-gray-500 mt-1">This message will be displayed as an announcement at the top of your site.</p>
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone:</label>
+            <input
+              type="text"
+              className="w-full p-2 border border-gray-300"
+              value={infoBar.phone || ''}
+              onChange={(e) => {
+                setConfig({
+                  ...config,
+                  infoBar: {
+                    ...infoBar,
+                    phone: e.target.value
+                  }
+                });
+              }}
+              placeholder="Phone number"
+            />
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Address:</label>
+            <input
+              type="text"
+              className="w-full p-2 border border-gray-300"
+              value={infoBar.address || ''}
+              onChange={(e) => {
+                setConfig({
+                  ...config,
+                  infoBar: {
+                    ...infoBar,
+                    address: e.target.value
+                  }
+                });
+              }}
+              placeholder="Business address"
+            />
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Hours:</label>
+            <input
+              type="text"
+              className="w-full p-2 border border-gray-300"
+              value={infoBar.hours || ''}
+              onChange={(e) => {
+                setConfig({
+                  ...config,
+                  infoBar: {
+                    ...infoBar,
+                    hours: e.target.value
+                  }
+                });
+              }}
+              placeholder="Business hours"
+            />
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Background Color:</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                className="w-8 h-8 border border-gray-300"
+                value={infoBar.backgroundColor || '#fde68a'}
+                onChange={(e) => {
+                  setConfig({
+                    ...config,
+                    infoBar: {
+                      ...infoBar,
+                      backgroundColor: e.target.value
+                    }
+                  });
+                }}
+              />
+              <input
+                type="text"
+                className="w-20 p-1 border border-gray-300 text-xs"
+                value={infoBar.backgroundColor || '#fde68a'}
+                onChange={(e) => {
+                  setConfig({
+                    ...config,
+                    infoBar: {
+                      ...infoBar,
+                      backgroundColor: e.target.value
+                    }
+                  });
+                }}
+              />
+            </div>
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Text Color:</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                className="w-8 h-8 border border-gray-300"
+                value={infoBar.textColor || '#78350f'}
+                onChange={(e) => {
+                  setConfig({
+                    ...config,
+                    infoBar: {
+                      ...infoBar,
+                      textColor: e.target.value
+                    }
+                  });
+                }}
+              />
+              <input
+                type="text"
+                className="w-20 p-1 border border-gray-300 text-xs"
+                value={infoBar.textColor || '#78350f'}
+                onChange={(e) => {
+                  setConfig({
+                    ...config,
+                    infoBar: {
+                      ...infoBar,
+                      textColor: e.target.value
+                    }
+                  });
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

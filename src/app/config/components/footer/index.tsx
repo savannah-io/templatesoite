@@ -3,38 +3,11 @@
 import React, { useState } from 'react'
 import FooterStyleConfig from './FooterStyleConfig'
 import { LocalConfig } from '@/config/localConfig'
-
-// Extend LocalConfig to include footerStyle
-interface FooterStyle {
-  gradientFromColor?: string;
-  gradientToColor?: string;
-  titleColor?: string;
-  textColor?: string;
-  linkColor?: string;
-  linkHoverColor?: string;
-  socialIconColor?: string;
-  dividerColor?: string;
-  quickLinksTitleColor?: string;
-  contactInfoTitleColor?: string;
-  infoTitleColor?: string;
-  joinButtonBgColor?: string;
-  joinButtonTextColor?: string;
-  joinButtonHoverBgColor?: string;
-  hoursCardBgColor?: string;
-  hoursCardTextColor?: string;
-  hoursCardValueColor?: string;
-  copyrightTextColor?: string;
-  policyLinkColor?: string;
-  policyLinkHoverColor?: string;
-}
-
-interface ExtendedLocalConfig extends LocalConfig {
-  footerStyle?: FooterStyle;
-}
+import { FooterStyle } from '@/config/configFixTypes'
 
 interface FooterConfigProps {
-  config: ExtendedLocalConfig;
-  setConfig: (config: ExtendedLocalConfig) => void;
+  config: any;
+  setConfig: (config: any) => void;
   expanded: boolean;
   setExpanded: (expanded: boolean) => void;
 }

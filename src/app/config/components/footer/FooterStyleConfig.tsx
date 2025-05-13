@@ -2,41 +2,13 @@
 
 import React from 'react'
 import ColorSelectorInput from '@/app/config/components/ColorSelectorInput'
+import RgbaColorInput from '@/app/config/components/RgbaColorInput'
 import { LocalConfig } from '@/config/localConfig'
-
-// Define the FooterStyle interface
-interface FooterStyle {
-  backgroundColor?: string;
-  gradientFromColor?: string;
-  gradientToColor?: string;
-  titleColor?: string;
-  textColor?: string;
-  linkColor?: string;
-  linkHoverColor?: string;
-  socialIconColor?: string;
-  dividerColor?: string;
-  quickLinksTitleColor?: string;
-  contactInfoTitleColor?: string;
-  infoTitleColor?: string;
-  joinButtonBgColor?: string;
-  joinButtonTextColor?: string;
-  joinButtonHoverBgColor?: string;
-  hoursCardBgColor?: string;
-  hoursCardTextColor?: string;
-  hoursCardValueColor?: string;
-  copyrightTextColor?: string;
-  policyLinkColor?: string;
-  policyLinkHoverColor?: string;
-}
-
-// Extend LocalConfig
-interface ExtendedLocalConfig extends Omit<LocalConfig, 'footerStyle'> {
-  footerStyle?: FooterStyle;
-}
+import { FooterStyle, getFooterStyle } from '@/config/configFixTypes'
 
 interface FooterStyleConfigProps {
-  config: ExtendedLocalConfig;
-  setConfig: (config: ExtendedLocalConfig) => void;
+  config: any;
+  setConfig: (config: any) => void;
 }
 
 export default function FooterStyleConfig({
@@ -45,11 +17,14 @@ export default function FooterStyleConfig({
 }: FooterStyleConfigProps) {
   // Helper function to update a footer style property
   const updateFooterStyle = (key: keyof FooterStyle, value: string) => {
+    // Get current footer style with defaults applied
+    const currentStyle = getFooterStyle(config);
+    
     // Create a new config with the updated footerStyle
     const updatedConfig = {
       ...config,
       footerStyle: {
-        ...(config.footerStyle || {}),
+        ...currentStyle,
         [key]: value
       }
     };
@@ -66,7 +41,14 @@ export default function FooterStyleConfig({
     e.preventDefault();
   };
 
-  const style = config.footerStyle || {};
+  // Get a properly formed style object with all defaults applied
+  const style = getFooterStyle(config);
+
+  // Use the RgbaColorInput component for background and other elements that benefit from transparency
+  const transparencyEnabledKeys = [
+    'gradientFromColor', 'gradientToColor', 'dividerColor', 
+    'hoursCardBgColor', 'socialIconColor'
+  ];
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-sm space-y-6">
@@ -77,16 +59,16 @@ export default function FooterStyleConfig({
         <div className="space-y-3">
           <h4 className="font-medium">Background Gradient</h4>
           <div onClick={handleColorInputClick}>
-            <ColorSelectorInput
+            <RgbaColorInput
               label="From Color"
-              value={style.gradientFromColor || '#ffffff'}
+              value={style.gradientFromColor || 'rgba(255, 255, 255, 1.0)'}
               onChange={(value: string) => updateFooterStyle('gradientFromColor', value)}
             />
           </div>
           <div onClick={handleColorInputClick}>
-            <ColorSelectorInput
+            <RgbaColorInput
               label="To Color"
-              value={style.gradientToColor || '#f9fafb'}
+              value={style.gradientToColor || 'rgba(249, 250, 251, 1.0)'}
               onChange={(value: string) => updateFooterStyle('gradientToColor', value)}
             />
           </div>
@@ -155,14 +137,14 @@ export default function FooterStyleConfig({
         <div className="space-y-3">
           <h4 className="font-medium">Accent Elements</h4>
           <div onClick={handleColorInputClick}>
-            <ColorSelectorInput
+            <RgbaColorInput
               label="Social Icon Color"
-              value={style.socialIconColor || '#4f46e5'}
+              value={style.socialIconColor || 'rgba(79, 70, 229, 1.0)'}
               onChange={(value: string) => updateFooterStyle('socialIconColor', value)}
             />
           </div>
           <div onClick={handleColorInputClick}>
-            <ColorSelectorInput
+            <RgbaColorInput
               label="Divider Color"
               value={style.dividerColor || 'rgba(79, 70, 229, 0.2)'}
               onChange={(value: string) => updateFooterStyle('dividerColor', value)}
@@ -192,6 +174,58 @@ export default function FooterStyleConfig({
               label="Policy Link Hover"
               value={style.policyLinkHoverColor || '#4f46e5'}
               onChange={(value: string) => updateFooterStyle('policyLinkHoverColor', value)}
+            />
+          </div>
+        </div>
+        
+        {/* Hours Card */}
+        <div className="space-y-3">
+          <h4 className="font-medium">Hours Card</h4>
+          <div onClick={handleColorInputClick}>
+            <RgbaColorInput
+              label="Card Background"
+              value={style.hoursCardBgColor || 'rgba(255, 255, 255, 0.6)'}
+              onChange={(value: string) => updateFooterStyle('hoursCardBgColor', value)}
+            />
+          </div>
+          <div onClick={handleColorInputClick}>
+            <ColorSelectorInput
+              label="Label Color"
+              value={style.hoursCardTextColor || '#4b5563'}
+              onChange={(value: string) => updateFooterStyle('hoursCardTextColor', value)}
+            />
+          </div>
+          <div onClick={handleColorInputClick}>
+            <ColorSelectorInput
+              label="Value Color"
+              value={style.hoursCardValueColor || '#4f46e5'}
+              onChange={(value: string) => updateFooterStyle('hoursCardValueColor', value)}
+            />
+          </div>
+        </div>
+        
+        {/* Join Button */}
+        <div className="space-y-3">
+          <h4 className="font-medium">Join Team Button</h4>
+          <div onClick={handleColorInputClick}>
+            <ColorSelectorInput
+              label="Button Background"
+              value={style.joinButtonBgColor || '#4f46e5'}
+              onChange={(value: string) => updateFooterStyle('joinButtonBgColor', value)}
+            />
+          </div>
+          <div onClick={handleColorInputClick}>
+            <ColorSelectorInput
+              label="Button Text"
+              value={style.joinButtonTextColor || '#ffffff'}
+              onChange={(value: string) => updateFooterStyle('joinButtonTextColor', value)}
+            />
+          </div>
+          <div onClick={handleColorInputClick}>
+            <ColorSelectorInput
+              label="Button Hover Bg"
+              value={style.joinButtonHoverBgColor || '#4338ca'}
+              onChange={(value: string) => updateFooterStyle('joinButtonHoverBgColor', value)}
             />
           </div>
         </div>
@@ -244,7 +278,7 @@ export default function FooterStyleConfig({
           <div className="ml-3">
             <h3 className="text-sm font-medium text-blue-800">Using the color editor</h3>
             <div className="mt-2 text-sm text-blue-700">
-              <p>Changes will be saved after you finish editing a color. Click the Save Changes button above to apply all your changes when you're done.</p>
+              <p>You can now adjust transparency for background colors and other elements. Changes will be saved after you finish editing. Click the Save Changes button to apply all your changes.</p>
             </div>
           </div>
         </div>

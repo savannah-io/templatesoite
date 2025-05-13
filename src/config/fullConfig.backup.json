@@ -1,0 +1,191 @@
+{
+  "pages": {
+    "Contact": {
+      "title": "Contact Us",
+      "content": "<p>Get in touch with our team today.</p>",
+      "heroImage": "/images/hero-contact.jpg"
+    },
+    "Reviews": {
+      "title": "Customer Reviews",
+      "highlight": "Our Community",
+      "subtitle": "We're committed to excellence",
+      "content": "<p>See what our customers say about us.</p>",
+      "titleColor": "#111827",
+      "highlightColor": "#4f46e5",
+      "subtitleColor": "#4b5563",
+      "contentColor": "#6b7280",
+      "badge": "Testimonials",
+      "badgeColor": "#f3e8ff",
+      "badgeTextColor": "#9333ea",
+      "heroBgColor": "#4f46e5",
+      "heroGradientStart": "#4338ca",
+      "heroGradientEnd": "#6366f1",
+      "heroOverlayOpacity": 0.5,
+      "reviewsSectionTitle": "What Our Customers Say",
+      "reviewsSectionSubtitle": "Read testimonials from satisfied customers",
+      "reviewsTitleColor": "#065f46",
+      "reviewsSubtitleColor": "#047857",
+      "testimonialLayout": "grid",
+      "cardsPerRow": "3",
+      "cardBgColor": "#ffffff",
+      "cardBorderColor": "#e5e7eb",
+      "cardTextColor": "#374151",
+      "cardShadow": "md",
+      "authorNameColor": "#111827",
+      "ratingColor": "#FBBF24",
+      "ctaTitle": "Ready to Experience Our Service?",
+      "ctaDescription": "Join our growing list of satisfied customers today.",
+      "ctaTitleColor": "#FFFFFF",
+      "ctaDescriptionColor": "#F3F4F6",
+      "ctaButtonText": "Schedule Now",
+      "ctaButtonUrl": "/#schedule",
+      "ctaButtonBgColor": "#FFFFFF",
+      "ctaButtonTextColor": "#4F46E5",
+      "ctaSecondaryButtonText": "Call Us",
+      "ctaSecondaryButtonUrl": "tel:+17704950050",
+      "ctaSecondaryButtonBgColor": "#4F46E5",
+      "ctaSecondaryButtonTextColor": "#FFFFFF",
+      "ctaBgColor": "#4F46E5",
+      "ctaGradientStart": "#4338ca",
+      "ctaGradientEnd": "#6366f1",
+      "ctaPatternStyle": "diagonal-lines",
+      "reviews": [
+        {
+          "text": "Max and the team did an incredible job on my 2020 Mazda CX-30. I'm extremely happy with the results and would recommend them to everyone!",
+          "author": "Jarrett B.",
+          "rating": 5
+        },
+        {
+          "text": "The owner Max was AMAZING!! His work is top notch! I think my vehicle actually looks better than it did before I had the accident!",
+          "author": "Jordan P.",
+          "rating": 5
+        },
+        {
+          "text": "Had a door out of alignment and Max fixed it in just a few minutes. No appointment. Just rolled in off the street. Great place.",
+          "author": "Rob G.",
+          "rating": 5
+        }
+      ]
+    },
+    "Services": {
+      "title": "Our Auto Body Services",
+      "subtitle": "Expert collision repair and auto body services in Duluth, GA. Quality work guaranteed.",
+      "badge": "Certified Auto Body Shop",
+      "yearsExperience": "15+",
+      "carsRepaired": "5000+",
+      "serviceCategories": [
+        {
+          "id": "collision",
+          "title": "Collision Services",
+          "icon": "<ExclamationTriangleIcon className=\"w-full h-full\" />",
+          "description": "Complete collision repair services to restore your vehicle to pre-accident condition",
+          "bgImage": "/images/back1.png",
+          "color": "from-primary-500 to-primary-600",
+          "services": [
+            {
+              "title": "Collision Repair",
+              "description": "Expert repair of vehicle damage from accidents",
+              "icon": "<WrenchScrewdriverIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Frame & Alignment",
+              "description": "Precise frame straightening and alignment services",
+              "icon": "<CogIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Paint Services",
+              "description": "Professional auto painting with color matching",
+              "icon": "<PaintBrushIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Dent Removal",
+              "description": "Skilled dent removal using advanced techniques",
+              "icon": "<WrenchIcon className=\"w-6 h-6\" />"
+            }
+          ]
+        },
+        {
+          "id": "cosmetic",
+          "title": "Cosmetic Services",
+          "icon": "<SparklesOutlineIcon className=\"w-full h-full\" />",
+          "description": "Premium cosmetic services to enhance and protect your vehicle's appearance",
+          "bgImage": "/images/back5.png",
+          "color": "from-primary-500 to-primary-600",
+          "services": [
+            {
+              "title": "Auto Detailing",
+              "description": "Comprehensive interior and exterior detailing",
+              "icon": "<SparklesIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Paint Protection",
+              "description": "Advanced paint protection and ceramic coating",
+              "icon": "<ShieldCheckIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Classic Restoration",
+              "description": "Expert restoration of vintage vehicles",
+              "icon": "<WrenchScrewdriverOutlineIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Wheel & Rim Services",
+              "description": "Professional wheel repair and restoration",
+              "icon": "<CogOutlineIcon className=\"w-6 h-6\" />"
+            }
+          ]
+        },
+        {
+          "id": "mechanical",
+          "title": "Mechanical Services",
+          "icon": "<CogIcon className=\"w-full h-full\" />",
+          "description": "Essential mechanical services and diagnostics for optimal vehicle performance",
+          "bgImage": "/images/back4.png",
+          "color": "from-primary-500 to-primary-600",
+          "services": [
+            {
+              "title": "Diagnostic Services",
+              "description": "Comprehensive vehicle diagnostics and assessment",
+              "icon": "<BeakerIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Check Engine Light",
+              "description": "Professional diagnosis and resolution",
+              "icon": "<ExclamationTriangleIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Fleet Services",
+              "description": "Specialized fleet maintenance and repair",
+              "icon": "<TruckIcon className=\"w-6 h-6\" />"
+            },
+            {
+              "title": "Custom Fabrication",
+              "description": "Specialized metal fabrication and repairs",
+              "icon": "<WrenchIcon className=\"w-6 h-6\" />"
+            }
+          ]
+        }
+      ],
+      "expertiseTitle": "Why Expert Auto Body Repair Matters",
+      "expertiseDescription": "Modern vehicles are complex machines requiring specialized knowledge and equipment for proper repairs. Choosing the right auto body shop can make all the difference in your vehicle's safety and longevity.",
+      "expertiseCards": [
+        {
+          "title": "Safety First",
+          "description": "Proper repairs ensure your vehicle's structural integrity and safety systems function correctly, protecting you and your passengers."
+        },
+        {
+          "title": "Advanced Technology",
+          "description": "We use state-of-the-art equipment and techniques to diagnose and repair modern vehicles with precision and accuracy."
+        },
+        {
+          "title": "Long-Term Value",
+          "description": "Expert repairs maintain your vehicle's value and prevent future problems, saving you money in the long run."
+        }
+      ],
+      "ctaTitle": "Ready to Get Your Car Back to Perfect?",
+      "ctaDescription": "Schedule your appointment today and experience the difference expert auto body repair makes.",
+      "scheduleButtonText": "Schedule Now",
+      "callButtonText": "Call Us Now",
+      "heroImage": "/images/hero-services.jpg"
+    }
+  }
+} 
